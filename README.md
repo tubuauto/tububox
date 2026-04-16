@@ -1,67 +1,128 @@
-# Delivery SaaS
+# tububox - Delivery Fulfillment SaaS (MVP)
 
-一个 **可独立运营、支持多商家、多来源订单、API 接入的同城配送履约 SaaS 平台**。
+API-first, multi-tenant delivery fulfillment platform built with PHP 8 and PostgreSQL.
 
-## 项目定位
+Current Phase 1 implementation includes:
 
-本项目不是某个商城附属的配送模块，而是一个独立的第三方配送履约平台，支持：
+- Project skeleton with layered architecture (`Controller / Service / Repository / Middleware`)
+- PostgreSQL migration and seed scripts
+- Session login, role middleware, API key authentication
+- Core delivery APIs (create/list/detail/cancel)
+- Dispatch APIs and driver fulfillment APIs (accept/pickup/sign/complete/COD/tracking)
+- Web UI baseline (login, dashboard, merchant delivery pages, dispatch page, driver H5 page)
 
-- 团购平台推单
-- 商家后台发单
-- 第三方 API 接单
-- 手工创建配送单
-- 调度派单
-- 司机履约
-- Webhook 状态回传
-- COD 代收款
+Phase 2 hardening completed:
 
----
+- Tenant scope middleware for authenticated routes
+- Typed API exceptions and unified error payload (`error_code`, `meta.request_id`)
+- Session security baseline (session id rotation, fingerprint check, idle timeout)
 
-## 核心能力
+Phase 3 features completed:
 
-- 多租户 SaaS
-- API-first
-- PHP 8 + PostgreSQL
-- 商家端后台
-- 调度端后台
-- 司机端 H5
-- Web + Mobile 响应式 UI
+- Webhook endpoint management (Web UI + API): create/list/update/delete
+- Outbound webhook signing support (`X-Tubu-Timestamp`, `X-Tubu-Signature`)
+- Dispatch UI action closure: assign, reassign, mark-failed
+- Integration test script for idempotency, state machine, tenant isolation, dispatch flow, webhook endpoint ACL
 
----
+## 1. Requirements
 
-## 主要角色
+- PHP `>= 8.1` (8.2+ recommended)
+- PostgreSQL `>= 14`
+- PHP extension: `pdo_pgsql`
 
-- admin：平台管理员
-- tenant_admin：租户管理员
-- operator：操作员 / 发单员
-- dispatcher：调度员
-- driver：司机 / 骑手
+## 2. Quick Start
 
----
+1. Copy environment file:
 
-## 第一阶段 MVP 范围
+```bash
+cp .env.example .env
+```
 
-### 后端
-- 多租户基础
-- 登录与权限
-- deliveries 核心模型
-- API 创建配送单
-- 派单 / 改派
-- 司机接单 / 取件 / 签收 / 完成
-- 轨迹上传
-- webhook 回调
-- COD 基础流程
+2. Update database connection in `.env`.
 
-### 前端
-- 登录页
-- Dashboard
-- 商家端配送单列表 / 详情 / 创建页
-- 调度端派单页
-- 司机端 H5 基础流程
+3. Run migrations:
 
----
+```bash
+php bin/migrate.php
+```
 
-## 目录建议
+4. Seed demo data:
+
+```bash
+php bin/seed.php
+```
+
+5. Start local server:
+
+```bash
+php -S 127.0.0.1:8080 -t public public/router.php
+```
+
+6. Open:
+
+- [http://127.0.0.1:8080/login](http://127.0.0.1:8080/login)
+
+## 3. Default Accounts
+
+- Admin: `admin@tububox.local / admin123`
+- Dispatcher: `dispatcher@tububox.local / admin123`
+- Driver: `driver@tububox.local / admin123`
+
+## 4. Demo API Key
+
+Use request headers:
+
+- `X-API-KEY: demo_key`
+- `X-API-SECRET: demo_secret`
+
+## 5. Key APIs (MVP)
+
+- `POST /api/v1/deliveries`
+- `GET /api/v1/deliveries`
+- `GET /api/v1/deliveries/{id}`
+- `POST /api/v1/deliveries/{id}/cancel`
+- `POST /api/v1/dispatch/assign`
+- `POST /api/v1/dispatch/reassign`
+- `POST /api/v1/dispatch/mark-failed`
+- `POST /api/v1/driver/deliveries/{id}/accept`
+- `POST /api/v1/driver/deliveries/{id}/arrive-pickup`
+- `POST /api/v1/driver/deliveries/{id}/pickup`
+- `POST /api/v1/driver/deliveries/{id}/arrive-dropoff`
+- `POST /api/v1/driver/deliveries/{id}/sign`
+- `POST /api/v1/driver/deliveries/{id}/complete`
+- `POST /api/v1/driver/deliveries/{id}/cod-collect`
+- `POST /api/v1/driver/location`
+- `GET /api/v1/webhook-endpoints`
+- `POST /api/v1/webhook-endpoints`
+- `POST /api/v1/webhook-endpoints/{id}/update`
+- `POST /api/v1/webhook-endpoints/{id}/delete`
+
+API response contract:
+
+- Success: `success`, `message`, `data`, `meta`
+- Error: `success`, `message`, `error_code`, `errors`, `meta`
+
+Outbound webhook signature:
+
+- `X-Tubu-Timestamp: <unix-seconds>`
+- `X-Tubu-Signature: sha256=<hex-hmac>`
+- Signature payload: `<timestamp>.<json-body>`
+
+## 7. Integration Test (Phase 3)
+
+Run:
+
+```bash
+php bin/test-phase3.php
+```
+
+Notes:
+
+- Uses current PostgreSQL from `.env`
+- Requires migrations to be applied first
+- Runs in a DB transaction and rolls back automatically
+
+## 6. Folder Layout
 
 ```text
 app/
@@ -83,7 +144,8 @@ public/
 routes/
 storage/
 tests/
-docs/
+doc/
   MASTER_SPEC.md
   API_SPEC.md
   DB_SCHEMA.sql
+```
