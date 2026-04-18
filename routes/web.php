@@ -51,7 +51,7 @@ $authController = new AuthController($view, $authService);
 $dashboardController = new DashboardController($view, $dashboardRepo);
 $deliveryPageController = new DeliveryPageController($view, $deliveryService, $deliveryLogs);
 $dispatchPageController = new DispatchPageController($view, $deliveries, $drivers, $dispatchService);
-$driverPageController = new DriverPageController($view, $drivers, $deliveries, $deliveryService, $driverService);
+$driverPageController = new DriverPageController($view, $drivers, $deliveries, $deliveryLogs, $deliveryService, $driverService);
 $webhookPageController = new WebhookPageController($view, $webhookService);
 
 $sessionAuth = new SessionAuthMiddleware($authService);

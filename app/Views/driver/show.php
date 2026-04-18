@@ -9,6 +9,7 @@
 
 <div class="card">
     <p>Status: <span class="badge"><?= h($delivery['status']) ?></span></p>
+    <p class="muted">`Accept` only confirms acceptance and writes a log. Status changes start from `Arrive Pickup`.</p>
     <p>Pickup: <?= h($delivery['pickup_address']) ?></p>
     <p>Dropoff: <?= h($delivery['dropoff_address']) ?></p>
 </div>
@@ -38,4 +39,22 @@
         <input type="text" name="proof_image" placeholder="proof image path">
         <button class="btn" type="submit">Submit COD</button>
     </form>
+</div>
+
+<div class="card table-wrap">
+    <h3>Fulfillment Logs</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Status</th><th>Note</th><th>Actor</th><th>At</th></tr></thead>
+        <tbody>
+        <?php foreach (($logs ?? []) as $log): ?>
+            <tr>
+                <td><?= h($log['id']) ?></td>
+                <td><?= h($log['status']) ?></td>
+                <td><?= h($log['note']) ?></td>
+                <td><?= h($log['actor_type']) ?> #<?= h($log['actor_id']) ?></td>
+                <td><?= h($log['created_at']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
 </div>

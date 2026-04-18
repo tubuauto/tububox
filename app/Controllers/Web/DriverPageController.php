@@ -6,6 +6,7 @@ namespace App\Controllers\Web;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Repositories\DeliveryLogRepository;
 use App\Repositories\DeliveryRepository;
 use App\Repositories\DriverRepository;
 use App\Services\DeliveryService;
@@ -18,6 +19,7 @@ final class DriverPageController extends BaseWebController
         \App\Core\View $view,
         private readonly DriverRepository $drivers,
         private readonly DeliveryRepository $deliveries,
+        private readonly DeliveryLogRepository $deliveryLogs,
         private readonly DeliveryService $deliveryService,
         private readonly DriverFulfillmentService $driverService
     ) {
@@ -59,10 +61,14 @@ final class DriverPageController extends BaseWebController
         }
 
         try {
-            $delivery = $this->deliveryService->getOrFail($auth, (int) $request->attribute('id'));
+            $deliveryId = (int) $request->attribute('id');
+            $delivery = $this->deliveryService->getOrFail($auth, $deliveryId);
+            $logs = $this->deliveryLogs->listByDelivery($deliveryId);
+
             return $this->render('driver.show', [
                 'auth' => $auth,
                 'delivery' => $delivery,
+                'logs' => $logs,
                 'flash' => $this->pullFlash(),
             ]);
         } catch (Throwable $e) {
