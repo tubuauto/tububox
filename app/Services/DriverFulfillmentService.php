@@ -8,6 +8,7 @@ use App\Exceptions\ForbiddenException;
 use App\Exceptions\NotFoundException;
 use App\Exceptions\ValidationException;
 use App\Repositories\CodCollectionRepository;
+use App\Repositories\DeliveryLogRepository;
 use App\Repositories\DeliveryRepository;
 use App\Repositories\DriverRepository;
 use App\Repositories\ProofOfDeliveryRepository;
@@ -17,6 +18,7 @@ final class DriverFulfillmentService
     public function __construct(
         private readonly DeliveryService $deliveryService,
         private readonly DeliveryRepository $deliveries,
+        private readonly DeliveryLogRepository $deliveryLogs,
         private readonly DriverRepository $drivers,
         private readonly ProofOfDeliveryRepository $proofs,
         private readonly CodCollectionRepository $codCollections
@@ -30,6 +32,15 @@ final class DriverFulfillmentService
     {
         $delivery = $this->deliveryService->getOrFail($auth, $deliveryId);
         $this->ensureDriverAssignment($auth, $delivery);
+
+        $this->deliveryLogs->create(
+            deliveryId: $deliveryId,
+            status: (string) ($delivery['status'] ?? 'assigned'),
+            note: 'Driver accepted delivery',
+            actorType: (string) ($auth['role'] ?? 'driver'),
+            actorId: isset($auth['id']) ? (int) $auth['id'] : null
+        );
+
         return $delivery;
     }
 

@@ -1,5 +1,12 @@
 <?php declare(strict_types=1); ?>
 <h1>Driver Delivery #<?= h($delivery['id']) ?></h1>
+
+<?php if (is_array($flash ?? null)): ?>
+    <div class="alert <?= (($flash['type'] ?? '') === 'error') ? 'alert-error' : 'alert-success' ?>">
+        <?= h($flash['message'] ?? '') ?>
+    </div>
+<?php endif; ?>
+
 <div class="card">
     <p>Status: <span class="badge"><?= h($delivery['status']) ?></span></p>
     <p>Pickup: <?= h($delivery['pickup_address']) ?></p>
@@ -32,4 +39,3 @@
         <button class="btn" type="submit">Submit COD</button>
     </form>
 </div>
-

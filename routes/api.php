@@ -44,7 +44,7 @@ $authService = new AuthService($users);
 $webhookService = new WebhookService($webhooks);
 $deliveryService = new DeliveryService($deliveries, $deliveryLogs, $tracking, new DeliveryPolicy(new TenantPolicy()), $webhookService);
 $dispatchService = new DispatchService($deliveryService, $drivers, $assignments);
-$driverService = new DriverFulfillmentService($deliveryService, $deliveries, $drivers, $proofs, $codCollections);
+$driverService = new DriverFulfillmentService($deliveryService, $deliveries, $deliveryLogs, $drivers, $proofs, $codCollections);
 
 $deliveryController = new DeliveryController($deliveryService, $deliveryLogs);
 $dispatchController = new DispatchController($dispatchService);
