@@ -32,11 +32,21 @@ final class DriverPageController extends BaseWebController
         }
 
         $driver = $this->drivers->findByUserId((int) ($auth['id'] ?? 0));
-        $items = $driver !== null ? $this->deliveries->listByDriver((int) $driver['id']) : [];
+        $isAdmin = (bool) ($auth['is_admin'] ?? false);
+
+        if ($driver !== null) {
+            $items = $this->deliveries->listByDriver((int) $driver['id']);
+        } elseif ($isAdmin) {
+            // Admin can inspect and drive the fulfillment flow for assigned deliveries.
+            $items = $this->deliveries->list(['status' => 'assigned'], null, true);
+        } else {
+            $items = [];
+        }
 
         return $this->render('driver.index', [
             'auth' => $auth,
             'driver' => $driver,
+            'is_admin' => $isAdmin,
             'items' => $items,
         ]);
     }
@@ -103,4 +113,3 @@ final class DriverPageController extends BaseWebController
         }
     }
 }
-

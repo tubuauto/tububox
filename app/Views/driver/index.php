@@ -1,9 +1,12 @@
 <?php declare(strict_types=1); ?>
 <h1>Driver H5</h1>
 
-<?php if ($driver === null): ?>
+<?php if ($driver === null && !($is_admin ?? false)): ?>
     <div class="alert alert-error">Current account is not bound to a driver profile.</div>
 <?php else: ?>
+    <?php if (($is_admin ?? false) && $driver === null): ?>
+        <div class="alert alert-success">Admin mode: showing assigned deliveries for fulfillment verification.</div>
+    <?php endif; ?>
     <div class="card table-wrap">
         <table>
             <thead><tr><th>ID</th><th>Status</th><th>Pickup</th><th>Dropoff</th><th></th></tr></thead>
@@ -21,4 +24,3 @@
         </table>
     </div>
 <?php endif; ?>
-
