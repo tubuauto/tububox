@@ -58,7 +58,7 @@ final class DeliveryRepository extends BaseRepository
             'goods_weight' => $payload['goods_weight'] ?? null,
             'goods_note' => $payload['goods_note'] ?? null,
             'delivery_fee_cents' => $payload['delivery_fee_cents'] ?? 0,
-            'cod_required' => $payload['cod_required'] ?? false,
+            'cod_required' => $this->toPgBoolean($payload['cod_required'] ?? false),
             'cod_amount_cents' => $payload['cod_amount_cents'] ?? 0,
             'cod_currency' => $payload['cod_currency'] ?? 'CAD',
             'cod_status' => $payload['cod_status'] ?? 'none',
@@ -219,5 +219,15 @@ final class DeliveryRepository extends BaseRepository
         $rows = $stmt->fetchAll();
 
         return is_array($rows) ? $rows : [];
+    }
+
+    private function toPgBoolean(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        $normalized = strtolower(trim((string) $value));
+        return in_array($normalized, ['1', 'true', 'on', 'yes'], true) ? 'true' : 'false';
     }
 }
