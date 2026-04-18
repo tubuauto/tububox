@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Repositories\Database;
-use PDO;
 
 require_once __DIR__ . '/../bootstrap/autoload.php';
 require_once __DIR__ . '/../app/Core/helpers.php';
@@ -191,4 +190,3 @@ function findOrCreateApiKey(PDO $pdo, int $tenantId, string $apiKey, string $api
     ]);
     return (int) $insert->fetchColumn();
 }
-
