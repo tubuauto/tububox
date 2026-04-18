@@ -72,6 +72,8 @@ $pdo->beginTransaction();
 try {
     $tenantA = createTenant($pdo, 'it-tenant-a-' . uniqid());
     $tenantB = createTenant($pdo, 'it-tenant-b-' . uniqid());
+    $dispatcherUserA = createUser($pdo, $tenantA, 'dispatcher', 'it-dispatcher-a-' . uniqid() . '@local');
+    $dispatcherUserB = createUser($pdo, $tenantB, 'dispatcher', 'it-dispatcher-b-' . uniqid() . '@local');
 
     $driverUserA1 = createUser($pdo, $tenantA, 'driver', 'it-driver-a1-' . uniqid() . '@local');
     $driverA1 = createDriver($pdo, $tenantA, $driverUserA1);
@@ -79,13 +81,13 @@ try {
     $driverA2 = createDriver($pdo, $tenantA, $driverUserA2);
 
     $authTenantA = [
-        'id' => 10001,
+        'id' => $dispatcherUserA,
         'tenant_id' => $tenantA,
         'role' => 'dispatcher',
         'is_admin' => false,
     ];
     $authTenantB = [
-        'id' => 10002,
+        'id' => $dispatcherUserB,
         'tenant_id' => $tenantB,
         'role' => 'dispatcher',
         'is_admin' => false,
