@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Controllers\Web\AuthController;
+use App\Controllers\Web\ApiKeyPageController;
+use App\Controllers\Web\AuditLogPageController;
 use App\Controllers\Web\DashboardController;
 use App\Controllers\Web\DeliveryPageController;
 use App\Controllers\Web\DispatchPageController;
@@ -14,6 +16,8 @@ use App\Middlewares\SessionAuthMiddleware;
 use App\Middlewares\TenantScopeMiddleware;
 use App\Policies\DeliveryPolicy;
 use App\Policies\TenantPolicy;
+use App\Repositories\ApiKeyRepository;
+use App\Repositories\AuditLogRepository;
 use App\Repositories\CodCollectionRepository;
 use App\Repositories\DashboardRepository;
 use App\Repositories\DeliveryAssignmentRepository;
@@ -21,16 +25,23 @@ use App\Repositories\DeliveryLogRepository;
 use App\Repositories\DeliveryRepository;
 use App\Repositories\DeliveryTrackingRepository;
 use App\Repositories\DriverRepository;
+use App\Repositories\LoginAttemptRepository;
 use App\Repositories\ProofOfDeliveryRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\WebhookRepository;
+use App\Services\ApiKeyService;
 use App\Services\AuthService;
+use App\Services\AuditService;
 use App\Services\DeliveryService;
 use App\Services\DispatchService;
 use App\Services\DriverFulfillmentService;
+use App\Services\LoginSecurityService;
 use App\Services\WebhookService;
 
 $users = new UserRepository($db);
+$apiKeys = new ApiKeyRepository($db);
+$auditLogs = new AuditLogRepository($db);
+$loginAttempts = new LoginAttemptRepository($db);
 $drivers = new DriverRepository($db);
 $deliveries = new DeliveryRepository($db);
 $deliveryLogs = new DeliveryLogRepository($db);
@@ -41,13 +52,18 @@ $codCollections = new CodCollectionRepository($db);
 $webhooks = new WebhookRepository($db);
 $dashboardRepo = new DashboardRepository($db);
 
+$auditService = new AuditService($auditLogs);
+$loginSecurity = new LoginSecurityService($loginAttempts, $auditService);
 $authService = new AuthService($users);
+$apiKeyService = new ApiKeyService($apiKeys, $auditService);
 $webhookService = new WebhookService($webhooks);
 $deliveryService = new DeliveryService($deliveries, $deliveryLogs, $tracking, new DeliveryPolicy(new TenantPolicy()), $webhookService);
 $dispatchService = new DispatchService($deliveryService, $drivers, $assignments);
 $driverService = new DriverFulfillmentService($deliveryService, $deliveries, $deliveryLogs, $drivers, $proofs, $codCollections);
 
-$authController = new AuthController($view, $authService);
+$authController = new AuthController($view, $authService, $loginSecurity);
+$apiKeyPageController = new ApiKeyPageController($view, $apiKeyService);
+$auditLogPageController = new AuditLogPageController($view, $auditLogs);
 $dashboardController = new DashboardController($view, $dashboardRepo);
 $deliveryPageController = new DeliveryPageController($view, $deliveryService, $deliveryLogs);
 $dispatchPageController = new DispatchPageController($view, $deliveries, $drivers, $dispatchService);
@@ -57,6 +73,7 @@ $webhookPageController = new WebhookPageController($view, $webhookService);
 $sessionAuth = new SessionAuthMiddleware($authService);
 $tenantScope = new TenantScopeMiddleware();
 $merchantRole = new RoleMiddleware(['admin', 'tenant_admin', 'operator', 'dispatcher']);
+$ownerRole = new RoleMiddleware(['admin', 'tenant_admin']);
 $dispatchRole = new RoleMiddleware(['admin', 'tenant_admin', 'dispatcher']);
 $driverRole = new RoleMiddleware(['admin', 'driver']);
 
@@ -69,6 +86,13 @@ $router->add('POST', '/login', [$authController, 'login']);
 $router->add('POST', '/logout', [$authController, 'logout'], [$sessionAuth]);
 
 $router->add('GET', '/dashboard', [$dashboardController, 'index'], [$sessionAuth]);
+
+$router->add('GET', '/api-keys', [$apiKeyPageController, 'index'], [$sessionAuth, $tenantScope, $ownerRole]);
+$router->add('POST', '/api-keys/create', [$apiKeyPageController, 'create'], [$sessionAuth, $tenantScope, $ownerRole]);
+$router->add('POST', '/api-keys/{id}/disable', [$apiKeyPageController, 'disable'], [$sessionAuth, $tenantScope, $ownerRole]);
+$router->add('POST', '/api-keys/{id}/rotate', [$apiKeyPageController, 'rotate'], [$sessionAuth, $tenantScope, $ownerRole]);
+
+$router->add('GET', '/audit-logs', [$auditLogPageController, 'index'], [$sessionAuth, $tenantScope, $ownerRole]);
 
 $router->add('GET', '/deliveries', [$deliveryPageController, 'index'], [$sessionAuth, $tenantScope, $merchantRole]);
 $router->add('GET', '/deliveries/create', [$deliveryPageController, 'createForm'], [$sessionAuth, $tenantScope, $merchantRole]);
