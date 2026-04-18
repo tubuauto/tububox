@@ -15,7 +15,9 @@ if (is_file($envPath)) {
             $stringValue = is_bool($value) ? ($value ? 'true' : 'false') : (string) $value;
             $_ENV[$key] = $stringValue;
             $_SERVER[$key] = $stringValue;
-            putenv(sprintf('%s=%s', $key, $stringValue));
+            if (function_exists('putenv')) {
+                putenv(sprintf('%s=%s', $key, $stringValue));
+            }
         }
     }
 }
@@ -66,4 +68,3 @@ foreach ($files as $file) {
 }
 
 echo "Migrations finished.\n";
-
