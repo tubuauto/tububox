@@ -203,7 +203,16 @@ function tableExists(PDO $pdo, string $table): bool
     );
     $stmt->execute(['table_name' => $table]);
     $row = $stmt->fetch();
-    return is_array($row) && ((string) ($row['exists'] ?? 'f') === 't');
+    if (!is_array($row) || !array_key_exists('exists', $row)) {
+        return false;
+    }
+
+    $value = $row['exists'];
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    return in_array(strtolower((string) $value), ['t', 'true', '1'], true);
 }
 
 function createTenant(PDO $pdo, string $name): int
