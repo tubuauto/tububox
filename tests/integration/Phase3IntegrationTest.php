@@ -197,10 +197,11 @@ function tableExists(PDO $pdo, string $table): bool
     $stmt = $pdo->prepare(
         'SELECT EXISTS (
             SELECT 1 FROM information_schema.tables
-            WHERE table_schema = :schema AND table_name = :table_name
+            WHERE table_name = :table_name
+              AND table_schema NOT IN (\'pg_catalog\', \'information_schema\')
         ) AS exists'
     );
-    $stmt->execute(['schema' => 'public', 'table_name' => $table]);
+    $stmt->execute(['table_name' => $table]);
     $row = $stmt->fetch();
     return is_array($row) && ((string) ($row['exists'] ?? 'f') === 't');
 }
