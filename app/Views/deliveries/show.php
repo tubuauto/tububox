@@ -27,7 +27,29 @@
 </div>
 
 <div class="card table-wrap">
-    <h3>Logs</h3>
+    <h3>Latest 10 Fulfillment Logs</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Status</th><th>Note</th><th>Actor</th><th>At</th></tr></thead>
+        <tbody>
+        <?php if (empty($latest_logs ?? [])): ?>
+            <tr><td colspan="5" class="muted">No logs yet.</td></tr>
+        <?php else: ?>
+            <?php foreach (($latest_logs ?? []) as $log): ?>
+                <tr>
+                    <td><?= h($log['id']) ?></td>
+                    <td><?= h($log['status']) ?></td>
+                    <td><?= h($log['note']) ?></td>
+                    <td><?= h($log['actor_type']) ?> #<?= h($log['actor_id']) ?></td>
+                    <td><?= h($log['created_at']) ?></td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
+<div class="card table-wrap">
+    <h3>All Logs (Max 200)</h3>
     <table>
         <thead><tr><th>ID</th><th>Status</th><th>Note</th><th>Actor</th><th>At</th></tr></thead>
         <tbody>
@@ -43,4 +65,3 @@
         </tbody>
     </table>
 </div>
-

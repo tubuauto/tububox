@@ -39,5 +39,22 @@ final class DeliveryLogRepository extends BaseRepository
 
         return is_array($rows) ? $rows : [];
     }
-}
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function listLatestByDelivery(int $deliveryId, int $limit = 10): array
+    {
+        $safeLimit = max(1, min(100, $limit));
+        $sql = sprintf(
+            'SELECT * FROM delivery_logs WHERE delivery_id = :delivery_id ORDER BY id DESC LIMIT %d',
+            $safeLimit
+        );
+
+        $stmt = $this->pdo()->prepare($sql);
+        $stmt->execute(['delivery_id' => $deliveryId]);
+        $rows = $stmt->fetchAll();
+
+        return is_array($rows) ? $rows : [];
+    }
+}

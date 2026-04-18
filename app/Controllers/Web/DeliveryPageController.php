@@ -117,11 +117,13 @@ final class DeliveryPageController extends BaseWebController
         try {
             $id = (int) $request->attribute('id');
             $delivery = $this->deliveryService->getOrFail($auth, $id);
+            $latestLogs = $this->deliveryLogs->listLatestByDelivery($id, 10);
             $logs = $this->deliveryLogs->listByDelivery($id);
 
             return $this->render('deliveries.show', [
                 'auth' => $auth,
                 'delivery' => $delivery,
+                'latest_logs' => $latestLogs,
                 'logs' => $logs,
             ]);
         } catch (Throwable $e) {
@@ -129,4 +131,3 @@ final class DeliveryPageController extends BaseWebController
         }
     }
 }
-
