@@ -55,5 +55,27 @@ final class OrganizationRepository extends BaseRepository
 
         return is_array($row) ? $row : [];
     }
-}
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function listMarketplaceStores(int $limit = 200): array
+    {
+        $safeLimit = max(1, min(500, $limit));
+        $stmt = $this->pdo()->prepare(
+            sprintf(
+                'SELECT o.*, t.name AS tenant_name
+                 FROM organizations o
+                 INNER JOIN tenants t ON t.id = o.tenant_id
+                 WHERE t.status = :status
+                 ORDER BY o.id DESC
+                 LIMIT %d',
+                $safeLimit
+            )
+        );
+        $stmt->execute(['status' => 'active']);
+        $rows = $stmt->fetchAll();
+
+        return is_array($rows) ? $rows : [];
+    }
+}

@@ -69,6 +69,8 @@ $router->add('POST', '/api/v1/deliveries/{id}/cancel', [$deliveryController, 'ca
 $router->add('GET', '/api/v1/deliveries/{id}/tracking', [$deliveryController, 'tracking'], [$apiKeyAuth, $tenantScope]);
 
 $router->add('POST', '/api/v1/marketplace/orders', [$deliveryController, 'createMarketplace'], [$sessionAuth, $marketplaceRole]);
+$router->add('GET', '/api/v1/marketplace/orders', [$deliveryController, 'indexMarketplace'], [$sessionAuth, $marketplaceRole]);
+$router->add('GET', '/api/v1/marketplace/orders/{id}', [$deliveryController, 'showMarketplace'], [$sessionAuth, $marketplaceRole]);
 
 $router->add('POST', '/api/v1/dispatch/assign', [$dispatchController, 'assign'], [$sessionAuth, $tenantScope, $dispatchRole]);
 $router->add('POST', '/api/v1/dispatch/reassign', [$dispatchController, 'reassign'], [$sessionAuth, $tenantScope, $dispatchRole]);

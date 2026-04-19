@@ -24,6 +24,7 @@ Current Phase 1 implementation includes:
 - Core delivery APIs (create/list/detail/cancel)
 - Dispatch APIs and rider fulfillment APIs (accept/pickup/sign/complete/COD/tracking)
 - Web UI baseline (login, dashboard, merchant delivery pages, dispatch page, rider H5 page)
+- Marketplace user module (create order / my orders / order detail)
 
 Phase 2 hardening completed:
 
@@ -98,6 +99,8 @@ Use request headers:
 - `GET /api/v1/deliveries/{id}`
 - `POST /api/v1/deliveries/{id}/cancel`
 - `POST /api/v1/marketplace/orders`
+- `GET /api/v1/marketplace/orders`
+- `GET /api/v1/marketplace/orders/{id}`
 - `POST /api/v1/dispatch/assign`
 - `POST /api/v1/dispatch/reassign`
 - `POST /api/v1/dispatch/mark-failed`

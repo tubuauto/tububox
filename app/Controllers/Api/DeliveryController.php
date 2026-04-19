@@ -95,6 +95,50 @@ final class DeliveryController extends BaseApiController
         }
     }
 
+    public function indexMarketplace(Request $request): Response
+    {
+        try {
+            $auth = $request->attribute('auth');
+            if (!is_array($auth)) {
+                return $this->error('Unauthorized', [], 401, 'UNAUTHORIZED', $request);
+            }
+
+            $items = $this->deliveryService->listMarketplaceForUser($auth, $request->query());
+
+            return $this->success('OK', [
+                'items' => $items,
+                'pagination' => [
+                    'page' => 1,
+                    'per_page' => 200,
+                    'total' => count($items),
+                ],
+            ], request: $request);
+        } catch (Throwable $e) {
+            return $this->handleException($e, $request);
+        }
+    }
+
+    public function showMarketplace(Request $request): Response
+    {
+        try {
+            $auth = $request->attribute('auth');
+            if (!is_array($auth)) {
+                return $this->error('Unauthorized', [], 401, 'UNAUTHORIZED', $request);
+            }
+
+            $deliveryId = (int) $request->attribute('id');
+            $delivery = $this->deliveryService->getMarketplaceForUserOrFail($auth, $deliveryId);
+            $logs = $this->deliveryLogs->listByDelivery($deliveryId);
+
+            return $this->success('OK', [
+                'delivery' => $delivery,
+                'logs' => $logs,
+            ], request: $request);
+        } catch (Throwable $e) {
+            return $this->handleException($e, $request);
+        }
+    }
+
     public function index(Request $request): Response
     {
         try {

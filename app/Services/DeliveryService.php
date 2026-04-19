@@ -64,6 +64,7 @@ final class DeliveryService
         $delivery = $this->deliveries->create([
             'tenant_id' => $tenantId,
             'store_id' => $storeId,
+            'requester_user_id' => $this->resolveRequesterUserId($auth, $sourceType),
             'source_type' => $sourceType,
             'source_platform' => $payload['source_platform'] ?? null,
             'source_order_no' => $payload['source_order_no'] ?? null,
@@ -220,6 +221,62 @@ final class DeliveryService
 
     /**
      * @param array<string, mixed> $auth
+     * @param array<string, mixed> $filters
+     * @return array<int, array<string, mixed>>
+     */
+    public function listMarketplaceForUser(array $auth, array $filters = []): array
+    {
+        if (($auth['is_admin'] ?? false) === true) {
+            $filters['source_type'] = 'marketplace';
+            return $this->deliveries->list($filters, null, true);
+        }
+
+        $role = (string) ($auth['role'] ?? '');
+        $userId = (int) ($auth['id'] ?? 0);
+        if ($role !== 'user' || $userId <= 0) {
+            throw new ForbiddenException('Only marketplace user can access marketplace orders.');
+        }
+
+        $filters['source_type'] = 'marketplace';
+        $filters['requester_user_id'] = $userId;
+
+        return $this->deliveries->list($filters, null, true);
+    }
+
+    /**
+     * @param array<string, mixed> $auth
+     * @return array<string, mixed>
+     */
+    public function getMarketplaceForUserOrFail(array $auth, int $deliveryId): array
+    {
+        $delivery = $this->deliveries->findById($deliveryId);
+        if ($delivery === null) {
+            throw new NotFoundException('Delivery not found.');
+        }
+
+        if ((string) ($delivery['source_type'] ?? '') !== 'marketplace') {
+            throw new ForbiddenException('This order is not a marketplace order.');
+        }
+
+        if (($auth['is_admin'] ?? false) === true) {
+            return $delivery;
+        }
+
+        $role = (string) ($auth['role'] ?? '');
+        $userId = (int) ($auth['id'] ?? 0);
+        if ($role !== 'user' || $userId <= 0) {
+            throw new ForbiddenException('Only marketplace user can access marketplace orders.');
+        }
+
+        if ((int) ($delivery['requester_user_id'] ?? 0) !== $userId) {
+            throw new ForbiddenException('No permission to access this order.');
+        }
+
+        return $delivery;
+    }
+
+    /**
+     * @param array<string, mixed> $auth
      */
     private function canCreateForTenant(array $auth, int $tenantId, string $sourceType): bool
     {
@@ -232,6 +289,24 @@ final class DeliveryService
         }
 
         return (int) ($auth['tenant_id'] ?? 0) === $tenantId;
+    }
+
+    /**
+     * @param array<string, mixed> $auth
+     */
+    private function resolveRequesterUserId(array $auth, string $sourceType): ?int
+    {
+        if ($sourceType !== 'marketplace') {
+            return null;
+        }
+
+        $role = (string) ($auth['role'] ?? '');
+        if ($role !== 'user') {
+            return null;
+        }
+
+        $userId = (int) ($auth['id'] ?? 0);
+        return $userId > 0 ? $userId : null;
     }
 
     private function resolveStoreId(int $tenantId, mixed $storeId): ?int

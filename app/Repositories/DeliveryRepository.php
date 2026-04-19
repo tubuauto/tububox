@@ -18,6 +18,7 @@ final class DeliveryRepository extends BaseRepository
             INSERT INTO deliveries (
                 tenant_id,
                 store_id,
+                requester_user_id,
                 source_type, source_platform, source_order_no, external_ref, idempotency_key,
                 sender_name, sender_phone, pickup_address, pickup_lat, pickup_lng,
                 recipient_name, recipient_phone, dropoff_address, dropoff_lat, dropoff_lng,
@@ -28,6 +29,7 @@ final class DeliveryRepository extends BaseRepository
             ) VALUES (
                 :tenant_id,
                 :store_id,
+                :requester_user_id,
                 :source_type, :source_platform, :source_order_no, :external_ref, :idempotency_key,
                 :sender_name, :sender_phone, :pickup_address, :pickup_lat, :pickup_lng,
                 :recipient_name, :recipient_phone, :dropoff_address, :dropoff_lat, :dropoff_lng,
@@ -42,6 +44,7 @@ final class DeliveryRepository extends BaseRepository
         $stmt->execute([
             'tenant_id' => $payload['tenant_id'],
             'store_id' => $payload['store_id'] ?? null,
+            'requester_user_id' => $payload['requester_user_id'] ?? null,
             'source_type' => $payload['source_type'] ?? 'merchant_dashboard',
             'source_platform' => $payload['source_platform'] ?? null,
             'source_order_no' => $payload['source_order_no'] ?? null,
@@ -153,6 +156,11 @@ final class DeliveryRepository extends BaseRepository
         if (!empty($filters['store_id'])) {
             $where[] = 'd.store_id = :store_id';
             $params['store_id'] = (int) $filters['store_id'];
+        }
+
+        if (!empty($filters['requester_user_id'])) {
+            $where[] = 'd.requester_user_id = :requester_user_id';
+            $params['requester_user_id'] = (int) $filters['requester_user_id'];
         }
 
         $sql = 'SELECT d.*, o.name AS store_name FROM deliveries d LEFT JOIN organizations o ON o.id = d.store_id';

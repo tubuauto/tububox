@@ -9,6 +9,7 @@ use App\Controllers\Web\DashboardController;
 use App\Controllers\Web\DeliveryPageController;
 use App\Controllers\Web\DispatchPageController;
 use App\Controllers\Web\DriverPageController;
+use App\Controllers\Web\MarketplacePageController;
 use App\Controllers\Web\OrganizationPageController;
 use App\Controllers\Web\UserManagementPageController;
 use App\Controllers\Web\WebhookPageController;
@@ -78,6 +79,7 @@ $dashboardController = new DashboardController($view, $dashboardRepo);
 $deliveryPageController = new DeliveryPageController($view, $deliveryService, $deliveryLogs, $organizations);
 $dispatchPageController = new DispatchPageController($view, $deliveries, $drivers, $dispatchService);
 $driverPageController = new DriverPageController($view, $drivers, $deliveries, $deliveryLogs, $deliveryService, $driverService);
+$marketplacePageController = new MarketplacePageController($view, $deliveryService, $deliveryLogs, $organizations);
 $webhookPageController = new WebhookPageController($view, $webhookService);
 
 $sessionAuth = new SessionAuthMiddleware($authService);
@@ -86,6 +88,7 @@ $merchantRole = new RoleMiddleware(['admin', 'merchant', 'operator']);
 $ownerRole = new RoleMiddleware(['admin', 'merchant']);
 $dispatchRole = new RoleMiddleware(['admin', 'merchant', 'operator']);
 $riderRole = new RoleMiddleware(['admin', 'rider']);
+$userRole = new RoleMiddleware(['admin', 'user']);
 
 $router->add('GET', '/', static function () use ($authService): Response {
     return $authService->user() === null ? Response::redirect('/login') : Response::redirect('/dashboard');
@@ -114,6 +117,11 @@ $router->add('GET', '/deliveries', [$deliveryPageController, 'index'], [$session
 $router->add('GET', '/deliveries/create', [$deliveryPageController, 'createForm'], [$sessionAuth, $tenantScope, $merchantRole]);
 $router->add('POST', '/deliveries', [$deliveryPageController, 'store'], [$sessionAuth, $tenantScope, $merchantRole]);
 $router->add('GET', '/deliveries/{id}', [$deliveryPageController, 'show'], [$sessionAuth, $tenantScope, $merchantRole]);
+
+$router->add('GET', '/marketplace/orders', [$marketplacePageController, 'index'], [$sessionAuth, $userRole]);
+$router->add('GET', '/marketplace/orders/create', [$marketplacePageController, 'createForm'], [$sessionAuth, $userRole]);
+$router->add('POST', '/marketplace/orders', [$marketplacePageController, 'store'], [$sessionAuth, $userRole]);
+$router->add('GET', '/marketplace/orders/{id}', [$marketplacePageController, 'show'], [$sessionAuth, $userRole]);
 
 $router->add('GET', '/dispatch', [$dispatchPageController, 'index'], [$sessionAuth, $tenantScope, $dispatchRole]);
 $router->add('POST', '/dispatch/assign', [$dispatchPageController, 'assign'], [$sessionAuth, $tenantScope, $dispatchRole]);

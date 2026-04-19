@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 $auth = $auth ?? ($_SESSION['user'] ?? null);
 $role = is_array($auth) ? (string) ($auth['role'] ?? 'guest') : 'guest';
+$isOwner = in_array($role, ['admin', 'merchant'], true);
+$isMerchantOps = in_array($role, ['admin', 'merchant', 'operator'], true);
+$isRider = in_array($role, ['admin', 'rider'], true);
+$isUser = in_array($role, ['admin', 'user'], true);
 ?>
 <!doctype html>
 <html lang="en">
@@ -18,14 +22,15 @@ $role = is_array($auth) ? (string) ($auth['role'] ?? 'guest') : 'guest';
         <div class="brand">tububox</div>
         <nav class="menu">
             <a href="/dashboard">Dashboard</a>
-            <a href="/deliveries">Deliveries</a>
-            <a href="/dispatch">Dispatch</a>
-            <a href="/webhooks">Webhooks</a>
-            <a href="/api-keys">API Keys</a>
-            <a href="/audit-logs">Audit Logs</a>
-            <a href="/stores">Stores</a>
-            <a href="/users">Users</a>
-            <a href="/rider/deliveries">Rider H5</a>
+            <?php if ($isUser): ?><a href="/marketplace/orders">Marketplace</a><?php endif; ?>
+            <?php if ($isMerchantOps): ?><a href="/deliveries">Deliveries</a><?php endif; ?>
+            <?php if ($isMerchantOps): ?><a href="/dispatch">Dispatch</a><?php endif; ?>
+            <?php if ($isMerchantOps): ?><a href="/webhooks">Webhooks</a><?php endif; ?>
+            <?php if ($isOwner): ?><a href="/api-keys">API Keys</a><?php endif; ?>
+            <?php if ($isOwner): ?><a href="/audit-logs">Audit Logs</a><?php endif; ?>
+            <?php if ($isOwner): ?><a href="/stores">Stores</a><?php endif; ?>
+            <?php if ($isOwner): ?><a href="/users">Users</a><?php endif; ?>
+            <?php if ($isRider): ?><a href="/rider/deliveries">Rider H5</a><?php endif; ?>
         </nav>
     </aside>
     <main class="main">
