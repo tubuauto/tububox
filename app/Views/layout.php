@@ -23,6 +23,8 @@ $role = is_array($auth) ? (string) ($auth['role'] ?? 'guest') : 'guest';
             <a href="/webhooks">Webhooks</a>
             <a href="/api-keys">API Keys</a>
             <a href="/audit-logs">Audit Logs</a>
+            <a href="/organizations">Organizations</a>
+            <a href="/users">Users</a>
             <a href="/driver/deliveries">Driver H5</a>
         </nav>
     </aside>

@@ -47,5 +47,26 @@ final class DriverRepository extends BaseRepository
 
         return is_array($rows) ? $rows : [];
     }
-}
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function createForUser(int $userId, ?int $tenantId, string $vehicleType = 'bike'): array
+    {
+        $stmt = $this->pdo()->prepare(
+            'INSERT INTO drivers (user_id, tenant_id, vehicle_type, status, online_status)
+             VALUES (:user_id, :tenant_id, :vehicle_type, :status, :online_status)
+             RETURNING *'
+        );
+        $stmt->execute([
+            'user_id' => $userId,
+            'tenant_id' => $tenantId,
+            'vehicle_type' => $vehicleType,
+            'status' => 'active',
+            'online_status' => false,
+        ]);
+        $row = $stmt->fetch();
+
+        return is_array($row) ? $row : [];
+    }
+}
