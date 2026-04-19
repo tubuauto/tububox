@@ -21,10 +21,10 @@
         <div class="card-grid two">
             <select name="role" required>
                 <option value="">Select role</option>
-                <option value="tenant_admin">tenant_admin</option>
+                <option value="merchant">merchant</option>
                 <option value="operator">operator</option>
-                <option value="dispatcher">dispatcher</option>
-                <option value="driver">driver</option>
+                <option value="rider">rider</option>
+                <option value="user">user</option>
             </select>
             <select name="organization_id">
                 <option value="">No organization</option>
@@ -66,4 +66,3 @@
         </tbody>
     </table>
 </div>
-

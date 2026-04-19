@@ -37,7 +37,7 @@ final class DriverFulfillmentService
             deliveryId: $deliveryId,
             status: (string) ($delivery['status'] ?? 'assigned'),
             note: 'Driver accepted delivery',
-            actorType: (string) ($auth['role'] ?? 'driver'),
+            actorType: (string) ($auth['role'] ?? 'rider'),
             actorId: isset($auth['id']) ? (int) $auth['id'] : null
         );
 
@@ -157,11 +157,11 @@ final class DriverFulfillmentService
 
         $driver = $this->drivers->findByUserId((int) ($auth['id'] ?? 0));
         if ($driver === null) {
-            throw new NotFoundException('Current user is not a driver.');
+            throw new NotFoundException('Current user is not a rider.');
         }
 
         if ((int) ($delivery['assigned_driver_id'] ?? 0) !== (int) $driver['id']) {
-            throw new ForbiddenException('Delivery is not assigned to current driver.');
+            throw new ForbiddenException('Delivery is not assigned to current rider.');
         }
     }
 }

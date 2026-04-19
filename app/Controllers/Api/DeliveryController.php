@@ -27,13 +27,64 @@ final class DeliveryController extends BaseApiController
             }
 
             $tenantId = (int) $auth['tenant_id'];
-            $result = $this->deliveryService->create($tenantId, $auth, $request->body());
+            $payload = $request->body();
+            if (trim((string) ($payload['source_type'] ?? '')) === '') {
+                $payload['source_type'] = 'merchant_api';
+            }
+            if (trim((string) ($payload['source_platform'] ?? '')) === '') {
+                $payload['source_platform'] = 'merchant_api';
+            }
+
+            $result = $this->deliveryService->create($tenantId, $auth, $payload);
             $delivery = $result['delivery'];
 
             return $this->success(
                 $result['idempotent'] ? 'Delivery already exists' : 'Delivery created',
                 [
                     'id' => (int) $delivery['id'],
+                    'status' => (string) $delivery['status'],
+                    'source_order_no' => $delivery['source_order_no'],
+                ],
+                request: $request
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, $request);
+        }
+    }
+
+    public function createMarketplace(Request $request): Response
+    {
+        try {
+            $auth = $request->attribute('auth');
+            if (!is_array($auth)) {
+                return $this->error('Unauthorized', [], 401, 'UNAUTHORIZED', $request);
+            }
+
+            $tenantId = (int) $request->input('tenant_id', 0);
+            if ($tenantId <= 0) {
+                return $this->error(
+                    message: 'tenant_id is required',
+                    errors: ['tenant_id' => 'tenant_id is required'],
+                    status: 422,
+                    errorCode: 'VALIDATION_FAILED',
+                    request: $request
+                );
+            }
+
+            $payload = $request->body();
+            $payload['source_type'] = 'marketplace';
+            if (trim((string) ($payload['source_platform'] ?? '')) === '') {
+                $payload['source_platform'] = 'tububox_marketplace';
+            }
+
+            $result = $this->deliveryService->create($tenantId, $auth, $payload);
+            $delivery = $result['delivery'];
+
+            return $this->success(
+                $result['idempotent'] ? 'Marketplace order already exists' : 'Marketplace order created',
+                [
+                    'id' => (int) $delivery['id'],
+                    'tenant_id' => (int) $delivery['tenant_id'],
                     'status' => (string) $delivery['status'],
                     'source_order_no' => $delivery['source_order_no'],
                 ],

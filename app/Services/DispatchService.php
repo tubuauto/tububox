@@ -80,7 +80,7 @@ final class DispatchService
             auth: $auth,
             deliveryId: $deliveryId,
             toStatus: 'failed',
-            note: (string) ($payload['reason'] ?? 'Marked failed by dispatcher')
+            note: (string) ($payload['reason'] ?? 'Marked failed by operator')
         );
     }
 }

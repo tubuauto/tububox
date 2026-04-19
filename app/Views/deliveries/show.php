@@ -19,9 +19,11 @@
 
 <div class="card">
     <h3>Meta</h3>
+    <p>source_type: <?= h($delivery['source_type'] ?: '-') ?></p>
     <p>source_order_no: <?= h($delivery['source_order_no'] ?: '-') ?></p>
     <p>external_ref: <?= h($delivery['external_ref'] ?: '-') ?></p>
-    <p>assigned_driver_id: <?= h($delivery['assigned_driver_id'] ?: '-') ?></p>
+    <p>store: <?= h($delivery['store_name'] ?: '-') ?> (<?= h($delivery['store_id'] ?: '-') ?>)</p>
+    <p>assigned_rider_id: <?= h($delivery['assigned_driver_id'] ?: '-') ?></p>
     <p>delivery_fee_cents: <?= h($delivery['delivery_fee_cents']) ?></p>
     <p>cod_status: <?= h($delivery['cod_status']) ?></p>
 </div>

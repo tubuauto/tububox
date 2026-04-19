@@ -11,6 +11,15 @@
 
 <form method="post" action="/deliveries" class="card form-grid">
     <h3>Source</h3>
+    <input type="text" value="merchant_dashboard" disabled>
+    <select name="store_id">
+        <option value="">Select store (optional)</option>
+        <?php foreach (($stores ?? []) as $store): ?>
+            <option value="<?= h($store['id']) ?>" <?= ((string) ($old['store_id'] ?? '') === (string) $store['id']) ? 'selected' : '' ?>>
+                #<?= h($store['id']) ?> <?= h($store['name']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
     <input type="text" name="source_order_no" placeholder="source_order_no" value="<?= h($old['source_order_no'] ?? '') ?>">
     <input type="text" name="external_ref" placeholder="external_ref" value="<?= h($old['external_ref'] ?? '') ?>">
     <input type="text" name="idempotency_key" placeholder="idempotency_key" value="<?= h($old['idempotency_key'] ?? '') ?>">
@@ -37,4 +46,3 @@
 
     <button class="btn" type="submit">Create</button>
 </form>
-

@@ -15,7 +15,7 @@ final class TenantUserService
     /**
      * @var array<int, string>
      */
-    private const ALLOWED_ROLES = ['tenant_admin', 'operator', 'dispatcher', 'driver'];
+    private const ALLOWED_ROLES = ['merchant', 'operator', 'rider', 'user'];
 
     public function __construct(
         private readonly UserRepository $users,
@@ -55,7 +55,7 @@ final class TenantUserService
         }
 
         $organizationId = $this->organizationIdOrFail($tenantId, $payload['organization_id'] ?? null);
-        $role = trim((string) $payload['role']);
+        $role = $this->normalizeRole((string) $payload['role']);
 
         $created = $this->users->create([
             'tenant_id' => $tenantId,
@@ -68,7 +68,7 @@ final class TenantUserService
             'status' => 'active',
         ]);
 
-        if ($role === 'driver') {
+        if ($role === 'rider') {
             $driver = $this->drivers->findByUserId((int) $created['id']);
             if ($driver === null) {
                 $this->drivers->createForUser((int) $created['id'], $tenantId);
@@ -118,7 +118,7 @@ final class TenantUserService
             $errors['password'] = 'Password must be at least 6 characters.';
         }
 
-        $role = trim((string) ($payload['role'] ?? ''));
+        $role = $this->normalizeRole((string) ($payload['role'] ?? ''));
         if (!in_array($role, self::ALLOWED_ROLES, true)) {
             $errors['role'] = 'Role is invalid.';
         }
@@ -163,5 +163,16 @@ final class TenantUserService
         $string = trim((string) $value);
         return $string === '' ? null : $string;
     }
-}
 
+    private function normalizeRole(string $role): string
+    {
+        $normalized = strtolower(trim($role));
+
+        return match ($normalized) {
+            'tenant_admin' => 'merchant',
+            'dispatcher' => 'operator',
+            'driver' => 'rider',
+            default => $normalized,
+        };
+    }
+}

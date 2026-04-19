@@ -43,7 +43,7 @@ final class ApiKeyAuthMiddleware implements MiddlewareInterface
         $request->setAttribute('auth', [
             'id' => null,
             'tenant_id' => (int) $apiKey['tenant_id'],
-            'role' => 'api_partner',
+            'role' => 'merchant',
             'is_admin' => false,
             'api_key_id' => (int) $apiKey['id'],
             'auth_type' => 'api_key',

@@ -7,6 +7,7 @@ namespace App\Controllers\Web;
 use App\Core\Request;
 use App\Core\Response;
 use App\Repositories\DeliveryLogRepository;
+use App\Repositories\OrganizationRepository;
 use App\Services\DeliveryService;
 use Throwable;
 
@@ -15,7 +16,8 @@ final class DeliveryPageController extends BaseWebController
     public function __construct(
         \App\Core\View $view,
         private readonly DeliveryService $deliveryService,
-        private readonly DeliveryLogRepository $deliveryLogs
+        private readonly DeliveryLogRepository $deliveryLogs,
+        private readonly OrganizationRepository $organizations
     ) {
         parent::__construct($view);
     }
@@ -42,8 +44,10 @@ final class DeliveryPageController extends BaseWebController
             return $this->redirect('/login');
         }
 
+        $stores = $this->storesForAuth($auth);
         return $this->render('deliveries.create', [
             'auth' => $auth,
+            'stores' => $stores,
             'errors' => [],
             'old' => [],
         ]);
@@ -58,8 +62,9 @@ final class DeliveryPageController extends BaseWebController
 
         $input = $request->body();
         $payload = [
-            'source_type' => 'manual',
-            'source_platform' => 'merchant_console',
+            'source_type' => 'merchant_dashboard',
+            'source_platform' => 'merchant_dashboard',
+            'store_id' => $input['store_id'] ?? null,
             'source_order_no' => $input['source_order_no'] ?? null,
             'external_ref' => $input['external_ref'] ?? null,
             'idempotency_key' => $input['idempotency_key'] ?? null,
@@ -101,6 +106,7 @@ final class DeliveryPageController extends BaseWebController
             $decoded = json_decode($e->getMessage(), true);
             return $this->render('deliveries.create', [
                 'auth' => $auth,
+                'stores' => $this->storesForAuth($auth),
                 'errors' => is_array($decoded) ? $decoded : ['general' => $e->getMessage()],
                 'old' => $input,
             ]);
@@ -129,5 +135,19 @@ final class DeliveryPageController extends BaseWebController
         } catch (Throwable $e) {
             return Response::html('<h1>400</h1><p>' . htmlspecialchars($e->getMessage(), ENT_QUOTES) . '</p>', 400);
         }
+    }
+
+    /**
+     * @param array<string, mixed> $auth
+     * @return array<int, array<string, mixed>>
+     */
+    private function storesForAuth(array $auth): array
+    {
+        $tenantId = $auth['tenant_id'] ?? null;
+        if ($tenantId === null) {
+            return [];
+        }
+
+        return $this->organizations->listByTenant((int) $tenantId);
     }
 }

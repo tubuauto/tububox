@@ -82,7 +82,7 @@ final class AuthService
      */
     private function normalizeSessionUser(array $user): array
     {
-        $role = (string) ($user['role'] ?? 'operator');
+        $role = $this->normalizeRoleLabel((string) ($user['role'] ?? 'operator'));
         return [
             'id' => (int) $user['id'],
             'tenant_id' => $user['tenant_id'] !== null ? (int) $user['tenant_id'] : null,
@@ -92,6 +92,18 @@ final class AuthService
             'email' => (string) ($user['email'] ?? ''),
             'is_admin' => $role === 'admin',
         ];
+    }
+
+    private function normalizeRoleLabel(string $role): string
+    {
+        $normalized = strtolower(trim($role));
+        return match ($normalized) {
+            'tenant_admin' => 'merchant',
+            'dispatcher' => 'operator',
+            'driver' => 'rider',
+            'api_partner' => 'merchant',
+            default => $normalized === '' ? 'operator' : $normalized,
+        };
     }
 
     private function fingerprint(): string

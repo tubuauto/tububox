@@ -1,5 +1,5 @@
 <?php declare(strict_types=1); ?>
-<h1>Organizations</h1>
+<h1>Stores</h1>
 
 <?php if (is_array($flash ?? null)): ?>
     <div class="alert <?= (($flash['type'] ?? '') === 'error') ? 'alert-error' : 'alert-success' ?>">
@@ -8,21 +8,21 @@
 <?php endif; ?>
 
 <div class="card">
-    <h3>Create Organization / Store</h3>
-    <form method="post" action="/organizations/create" class="form-grid">
-        <input type="text" name="name" placeholder="Organization name" required>
+    <h3>Create Store</h3>
+    <form method="post" action="/stores/create" class="form-grid">
+        <input type="text" name="name" placeholder="Store name" required>
         <input type="text" name="type" placeholder="Type (store / warehouse)">
         <textarea name="address" placeholder="Address"></textarea>
         <div class="card-grid two">
             <input type="text" name="lat" placeholder="Latitude">
             <input type="text" name="lng" placeholder="Longitude">
         </div>
-        <button class="btn" type="submit">Create Organization</button>
+        <button class="btn" type="submit">Create Store</button>
     </form>
 </div>
 
 <div class="card table-wrap">
-    <h3>Organization List</h3>
+    <h3>Store List</h3>
     <table>
         <thead>
             <tr>
@@ -46,4 +46,3 @@
         </tbody>
     </table>
 </div>
-

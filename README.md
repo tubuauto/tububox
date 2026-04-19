@@ -2,14 +2,28 @@
 
 API-first, multi-tenant delivery fulfillment platform built with PHP 8 and PostgreSQL.
 
+Role model (fixed):
+
+- `user`
+- `merchant`
+- `rider`
+- `operator`
+- `admin`
+
+Order sources (fixed):
+
+- `marketplace`
+- `merchant_dashboard`
+- `merchant_api`
+
 Current Phase 1 implementation includes:
 
 - Project skeleton with layered architecture (`Controller / Service / Repository / Middleware`)
 - PostgreSQL migration and seed scripts
 - Session login, role middleware, API key authentication
 - Core delivery APIs (create/list/detail/cancel)
-- Dispatch APIs and driver fulfillment APIs (accept/pickup/sign/complete/COD/tracking)
-- Web UI baseline (login, dashboard, merchant delivery pages, dispatch page, driver H5 page)
+- Dispatch APIs and rider fulfillment APIs (accept/pickup/sign/complete/COD/tracking)
+- Web UI baseline (login, dashboard, merchant delivery pages, dispatch page, rider H5 page)
 
 Phase 2 hardening completed:
 
@@ -65,8 +79,10 @@ php -S 127.0.0.1:8080 -t public public/router.php
 ## 3. Default Accounts
 
 - Admin: `admin@tububox.local / admin123`
-- Dispatcher: `dispatcher@tububox.local / admin123`
-- Driver: `driver@tububox.local / admin123`
+- Merchant: `merchant@tububox.local / admin123`
+- Operator: `operator@tububox.local / admin123`
+- Rider: `rider@tububox.local / admin123`
+- Marketplace User: `user@tububox.local / admin123`
 
 ## 4. Demo API Key
 
@@ -81,9 +97,18 @@ Use request headers:
 - `GET /api/v1/deliveries`
 - `GET /api/v1/deliveries/{id}`
 - `POST /api/v1/deliveries/{id}/cancel`
+- `POST /api/v1/marketplace/orders`
 - `POST /api/v1/dispatch/assign`
 - `POST /api/v1/dispatch/reassign`
 - `POST /api/v1/dispatch/mark-failed`
+- `POST /api/v1/rider/deliveries/{id}/accept`
+- `POST /api/v1/rider/deliveries/{id}/arrive-pickup`
+- `POST /api/v1/rider/deliveries/{id}/pickup`
+- `POST /api/v1/rider/deliveries/{id}/arrive-dropoff`
+- `POST /api/v1/rider/deliveries/{id}/sign`
+- `POST /api/v1/rider/deliveries/{id}/complete`
+- `POST /api/v1/rider/deliveries/{id}/cod-collect`
+- `POST /api/v1/rider/location`
 - `POST /api/v1/driver/deliveries/{id}/accept`
 - `POST /api/v1/driver/deliveries/{id}/arrive-pickup`
 - `POST /api/v1/driver/deliveries/{id}/pickup`

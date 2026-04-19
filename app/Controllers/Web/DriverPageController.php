@@ -118,14 +118,14 @@ final class DriverPageController extends BaseWebController
                     $message = 'COD collection submitted.';
                     break;
                 default:
-                    throw new \RuntimeException('Unknown driver action.');
+                    throw new \RuntimeException('Unknown rider action.');
             }
 
             $this->pushFlash('success', $message);
-            return $this->redirect('/driver/deliveries/' . $deliveryId);
+            return $this->redirect('/rider/deliveries/' . $deliveryId);
         } catch (Throwable $e) {
             $this->pushFlash('error', $e->getMessage());
-            return $this->redirect('/driver/deliveries/' . $deliveryId);
+            return $this->redirect('/rider/deliveries/' . $deliveryId);
         }
     }
 

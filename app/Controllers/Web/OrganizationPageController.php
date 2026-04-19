@@ -46,12 +46,12 @@ final class OrganizationPageController extends BaseWebController
 
         try {
             $created = $this->organizations->create($auth, $request->body());
-            $this->pushFlash('success', 'Organization created: ' . (string) ($created['name'] ?? '#'));
+            $this->pushFlash('success', 'Store created: ' . (string) ($created['name'] ?? '#'));
         } catch (Throwable $e) {
             $this->pushFlash('error', $e->getMessage());
         }
 
-        return $this->redirect('/organizations');
+        return $this->redirect('/stores');
     }
 
     private function pushFlash(string $type, string $message): void
@@ -76,4 +76,3 @@ final class OrganizationPageController extends BaseWebController
         ];
     }
 }
-

@@ -13,6 +13,7 @@ use App\Policies\DeliveryPolicy;
 use App\Repositories\DeliveryLogRepository;
 use App\Repositories\DeliveryRepository;
 use App\Repositories\DeliveryTrackingRepository;
+use App\Repositories\OrganizationRepository;
 use App\Requests\DeliveryCreateRequest;
 
 final class DeliveryService
@@ -21,6 +22,7 @@ final class DeliveryService
         private readonly DeliveryRepository $deliveries,
         private readonly DeliveryLogRepository $deliveryLogs,
         private readonly DeliveryTrackingRepository $tracking,
+        private readonly OrganizationRepository $organizations,
         private readonly DeliveryPolicy $policy,
         private readonly WebhookService $webhooks
     ) {
@@ -33,6 +35,7 @@ final class DeliveryService
      */
     public function create(int $tenantId, array $auth, array $payload): array
     {
+        $payload = $this->normalizeSourcePayload($payload);
         $errors = DeliveryCreateRequest::validate($payload);
         if (count($errors) > 0) {
             throw new ValidationException($errors);
@@ -51,14 +54,17 @@ final class DeliveryService
         $goods = is_array($payload['goods'] ?? null) ? $payload['goods'] : [];
         $pricing = is_array($payload['pricing'] ?? null) ? $payload['pricing'] : [];
         $cod = is_array($payload['cod'] ?? null) ? $payload['cod'] : [];
+        $sourceType = strtolower(trim((string) ($payload['source_type'] ?? 'merchant_dashboard')));
 
-        if (($auth['is_admin'] ?? false) !== true && (int) ($auth['tenant_id'] ?? 0) !== $tenantId) {
+        if (!$this->canCreateForTenant($auth, $tenantId, $sourceType)) {
             throw new ForbiddenException('No permission to create delivery for another tenant.');
         }
 
+        $storeId = $this->resolveStoreId($tenantId, $payload['store_id'] ?? null);
         $delivery = $this->deliveries->create([
             'tenant_id' => $tenantId,
-            'source_type' => $payload['source_type'] ?? 'manual',
+            'store_id' => $storeId,
+            'source_type' => $sourceType,
             'source_platform' => $payload['source_platform'] ?? null,
             'source_order_no' => $payload['source_order_no'] ?? null,
             'external_ref' => $payload['external_ref'] ?? null,
@@ -151,8 +157,8 @@ final class DeliveryService
         $this->deliveryLogs->create(
             deliveryId: $deliveryId,
             status: DeliveryStatus::ASSIGNED,
-            note: $note ?? 'Assigned to driver #' . $driverId,
-            actorType: (string) ($auth['role'] ?? 'dispatcher'),
+            note: $note ?? 'Assigned to rider #' . $driverId,
+            actorType: (string) ($auth['role'] ?? 'operator'),
             actorId: $auth['id'] ?? null
         );
 
@@ -210,5 +216,63 @@ final class DeliveryService
     public function tracking(int $deliveryId): array
     {
         return $this->tracking->listByDelivery($deliveryId);
+    }
+
+    /**
+     * @param array<string, mixed> $auth
+     */
+    private function canCreateForTenant(array $auth, int $tenantId, string $sourceType): bool
+    {
+        if (($auth['is_admin'] ?? false) === true) {
+            return true;
+        }
+
+        if ($sourceType === 'marketplace' && (string) ($auth['role'] ?? '') === 'user') {
+            return true;
+        }
+
+        return (int) ($auth['tenant_id'] ?? 0) === $tenantId;
+    }
+
+    private function resolveStoreId(int $tenantId, mixed $storeId): ?int
+    {
+        if ($storeId === null || trim((string) $storeId) === '') {
+            return null;
+        }
+
+        $id = (int) $storeId;
+        if ($id <= 0) {
+            throw new ValidationException(['store_id' => 'store_id is invalid.']);
+        }
+
+        $store = $this->organizations->findById($id);
+        if ($store === null || (int) ($store['tenant_id'] ?? 0) !== $tenantId) {
+            throw new ValidationException(['store_id' => 'store_id is out of tenant scope.']);
+        }
+
+        return $id;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function normalizeSourcePayload(array $payload): array
+    {
+        $sourceType = strtolower(trim((string) ($payload['source_type'] ?? '')));
+        $mapped = match ($sourceType) {
+            'manual', 'merchant_console' => 'merchant_dashboard',
+            'api' => 'merchant_api',
+            'platform' => 'marketplace',
+            default => $sourceType,
+        };
+
+        if ($mapped === '') {
+            $mapped = 'merchant_dashboard';
+        }
+
+        $payload['source_type'] = $mapped;
+
+        return $payload;
     }
 }

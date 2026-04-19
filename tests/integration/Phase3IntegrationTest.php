@@ -12,6 +12,7 @@ use App\Repositories\DeliveryLogRepository;
 use App\Repositories\DeliveryRepository;
 use App\Repositories\DeliveryTrackingRepository;
 use App\Repositories\DriverRepository;
+use App\Repositories\OrganizationRepository;
 use App\Repositories\WebhookRepository;
 use App\Services\DeliveryService;
 use App\Services\DispatchService;
@@ -55,6 +56,7 @@ $deliveries = new DeliveryRepository($db);
 $deliveryLogs = new DeliveryLogRepository($db);
 $tracking = new DeliveryTrackingRepository($db);
 $drivers = new DriverRepository($db);
+$organizations = new OrganizationRepository($db);
 $assignments = new DeliveryAssignmentRepository($db);
 $webhookRepo = new WebhookRepository($db);
 
@@ -63,6 +65,7 @@ $deliveryService = new DeliveryService(
     $deliveries,
     $deliveryLogs,
     $tracking,
+    $organizations,
     new DeliveryPolicy(new TenantPolicy()),
     $webhookService
 );
@@ -72,24 +75,24 @@ $pdo->beginTransaction();
 try {
     $tenantA = createTenant($pdo, 'it-tenant-a-' . uniqid());
     $tenantB = createTenant($pdo, 'it-tenant-b-' . uniqid());
-    $dispatcherUserA = createUser($pdo, $tenantA, 'dispatcher', 'it-dispatcher-a-' . uniqid() . '@local');
-    $dispatcherUserB = createUser($pdo, $tenantB, 'dispatcher', 'it-dispatcher-b-' . uniqid() . '@local');
+    $dispatcherUserA = createUser($pdo, $tenantA, 'operator', 'it-operator-a-' . uniqid() . '@local');
+    $dispatcherUserB = createUser($pdo, $tenantB, 'operator', 'it-operator-b-' . uniqid() . '@local');
 
-    $driverUserA1 = createUser($pdo, $tenantA, 'driver', 'it-driver-a1-' . uniqid() . '@local');
+    $driverUserA1 = createUser($pdo, $tenantA, 'rider', 'it-rider-a1-' . uniqid() . '@local');
     $driverA1 = createDriver($pdo, $tenantA, $driverUserA1);
-    $driverUserA2 = createUser($pdo, $tenantA, 'driver', 'it-driver-a2-' . uniqid() . '@local');
+    $driverUserA2 = createUser($pdo, $tenantA, 'rider', 'it-rider-a2-' . uniqid() . '@local');
     $driverA2 = createDriver($pdo, $tenantA, $driverUserA2);
 
     $authTenantA = [
         'id' => $dispatcherUserA,
         'tenant_id' => $tenantA,
-        'role' => 'dispatcher',
+        'role' => 'operator',
         'is_admin' => false,
     ];
     $authTenantB = [
         'id' => $dispatcherUserB,
         'tenant_id' => $tenantB,
-        'role' => 'dispatcher',
+        'role' => 'operator',
         'is_admin' => false,
     ];
 
@@ -275,7 +278,7 @@ function payload(string $sourceOrderNo, ?string $idempotencyKey): array
 {
     return [
         'idempotency_key' => $idempotencyKey,
-        'source_type' => 'platform',
+        'source_type' => 'merchant_dashboard',
         'source_platform' => 'integration-test',
         'source_order_no' => $sourceOrderNo,
         'external_ref' => $sourceOrderNo,

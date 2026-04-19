@@ -29,9 +29,10 @@ $pdo = $db->connection();
 $pdo->beginTransaction();
 try {
     $tenantId = findOrCreateTenant($pdo, 'Demo Tenant');
-    $organizationId = findOrCreateOrganization($pdo, $tenantId, 'Main Org');
+    $organizationId = findOrCreateOrganization($pdo, $tenantId, 'Main Store');
+    findOrCreateOrganization($pdo, $tenantId, 'Downtown Store');
 
-    $adminId = findOrCreateUser($pdo, [
+    findOrCreateUser($pdo, [
         'tenant_id' => $tenantId,
         'organization_id' => $organizationId,
         'role' => 'admin',
@@ -44,20 +45,40 @@ try {
     findOrCreateUser($pdo, [
         'tenant_id' => $tenantId,
         'organization_id' => $organizationId,
-        'role' => 'dispatcher',
-        'name' => 'Dispatch User',
+        'role' => 'merchant',
+        'name' => 'Merchant Owner',
+        'phone' => '10000000009',
+        'email' => 'merchant@tububox.local',
+        'password_hash' => password_hash('admin123', PASSWORD_BCRYPT),
+    ]);
+
+    findOrCreateUser($pdo, [
+        'tenant_id' => $tenantId,
+        'organization_id' => $organizationId,
+        'role' => 'operator',
+        'name' => 'Operator User',
         'phone' => '10000000001',
-        'email' => 'dispatcher@tububox.local',
+        'email' => 'operator@tububox.local',
         'password_hash' => password_hash('admin123', PASSWORD_BCRYPT),
     ]);
 
     $driverUserId = findOrCreateUser($pdo, [
         'tenant_id' => $tenantId,
         'organization_id' => $organizationId,
-        'role' => 'driver',
-        'name' => 'Driver User',
+        'role' => 'rider',
+        'name' => 'Rider User',
         'phone' => '10000000002',
-        'email' => 'driver@tububox.local',
+        'email' => 'rider@tububox.local',
+        'password_hash' => password_hash('admin123', PASSWORD_BCRYPT),
+    ]);
+
+    findOrCreateUser($pdo, [
+        'tenant_id' => null,
+        'organization_id' => null,
+        'role' => 'user',
+        'name' => 'Marketplace User',
+        'phone' => '10000000003',
+        'email' => 'user@tububox.local',
         'password_hash' => password_hash('admin123', PASSWORD_BCRYPT),
     ]);
 
@@ -72,8 +93,10 @@ try {
 
 echo "Seed finished.\n";
 echo "Web login: admin@tububox.local / admin123\n";
-echo "Dispatcher: dispatcher@tububox.local / admin123\n";
-echo "Driver: driver@tububox.local / admin123\n";
+echo "Merchant: merchant@tububox.local / admin123\n";
+echo "Operator: operator@tububox.local / admin123\n";
+echo "Rider: rider@tububox.local / admin123\n";
+echo "Marketplace User: user@tububox.local / admin123\n";
 echo "API key: demo_key / demo_secret\n";
 
 function findOrCreateTenant(PDO $pdo, string $name): int

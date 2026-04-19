@@ -1,8 +1,8 @@
 <?php declare(strict_types=1); ?>
-<h1>Driver H5</h1>
+<h1>Rider H5</h1>
 
 <?php if ($driver === null && !($is_admin ?? false)): ?>
-    <div class="alert alert-error">Current account is not bound to a driver profile.</div>
+    <div class="alert alert-error">Current account is not bound to a rider profile.</div>
 <?php else: ?>
     <?php if (($is_admin ?? false) && $driver === null): ?>
         <div class="alert alert-success">Admin mode: showing assigned deliveries for fulfillment verification.</div>
@@ -17,7 +17,7 @@
                     <td><span class="badge"><?= h($item['status']) ?></span></td>
                     <td><?= h($item['pickup_address']) ?></td>
                     <td><?= h($item['dropoff_address']) ?></td>
-                    <td><a class="btn btn-light" href="/driver/deliveries/<?= h($item['id']) ?>">Open</a></td>
+                    <td><a class="btn btn-light" href="/rider/deliveries/<?= h($item['id']) ?>">Open</a></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

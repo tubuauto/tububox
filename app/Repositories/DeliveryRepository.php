@@ -17,6 +17,7 @@ final class DeliveryRepository extends BaseRepository
         $sql = <<<'SQL'
             INSERT INTO deliveries (
                 tenant_id,
+                store_id,
                 source_type, source_platform, source_order_no, external_ref, idempotency_key,
                 sender_name, sender_phone, pickup_address, pickup_lat, pickup_lng,
                 recipient_name, recipient_phone, dropoff_address, dropoff_lat, dropoff_lng,
@@ -26,6 +27,7 @@ final class DeliveryRepository extends BaseRepository
                 status, scheduled_at
             ) VALUES (
                 :tenant_id,
+                :store_id,
                 :source_type, :source_platform, :source_order_no, :external_ref, :idempotency_key,
                 :sender_name, :sender_phone, :pickup_address, :pickup_lat, :pickup_lng,
                 :recipient_name, :recipient_phone, :dropoff_address, :dropoff_lat, :dropoff_lng,
@@ -39,7 +41,8 @@ final class DeliveryRepository extends BaseRepository
         $stmt = $this->pdo()->prepare($sql);
         $stmt->execute([
             'tenant_id' => $payload['tenant_id'],
-            'source_type' => $payload['source_type'] ?? 'manual',
+            'store_id' => $payload['store_id'] ?? null,
+            'source_type' => $payload['source_type'] ?? 'merchant_dashboard',
             'source_platform' => $payload['source_platform'] ?? null,
             'source_order_no' => $payload['source_order_no'] ?? null,
             'external_ref' => $payload['external_ref'] ?? null,
@@ -75,7 +78,13 @@ final class DeliveryRepository extends BaseRepository
      */
     public function findById(int $deliveryId): ?array
     {
-        $stmt = $this->pdo()->prepare('SELECT * FROM deliveries WHERE id = :id LIMIT 1');
+        $stmt = $this->pdo()->prepare(
+            'SELECT d.*, o.name AS store_name
+             FROM deliveries d
+             LEFT JOIN organizations o ON o.id = d.store_id
+             WHERE d.id = :id
+             LIMIT 1'
+        );
         $stmt->execute(['id' => $deliveryId]);
         $row = $stmt->fetch();
 
@@ -88,7 +97,11 @@ final class DeliveryRepository extends BaseRepository
     public function findByTenantAndIdempotency(int $tenantId, string $idempotencyKey): ?array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT * FROM deliveries WHERE tenant_id = :tenant_id AND idempotency_key = :idempotency_key LIMIT 1'
+            'SELECT d.*, o.name AS store_name
+             FROM deliveries d
+             LEFT JOIN organizations o ON o.id = d.store_id
+             WHERE d.tenant_id = :tenant_id AND d.idempotency_key = :idempotency_key
+             LIMIT 1'
         );
         $stmt->execute([
             'tenant_id' => $tenantId,
@@ -113,30 +126,40 @@ final class DeliveryRepository extends BaseRepository
         }
 
         if (!$isAdmin && $tenantId !== null) {
-            $where[] = 'tenant_id = :tenant_id';
+            $where[] = 'd.tenant_id = :tenant_id';
             $params['tenant_id'] = $tenantId;
         }
 
         if (!empty($filters['status'])) {
-            $where[] = 'status = :status';
+            $where[] = 'd.status = :status';
             $params['status'] = (string) $filters['status'];
         }
 
         if (!empty($filters['source_order_no'])) {
-            $where[] = 'source_order_no = :source_order_no';
+            $where[] = 'd.source_order_no = :source_order_no';
             $params['source_order_no'] = (string) $filters['source_order_no'];
         }
 
+        if (!empty($filters['source_type'])) {
+            $where[] = 'd.source_type = :source_type';
+            $params['source_type'] = (string) $filters['source_type'];
+        }
+
         if (!empty($filters['assigned_driver_id'])) {
-            $where[] = 'assigned_driver_id = :assigned_driver_id';
+            $where[] = 'd.assigned_driver_id = :assigned_driver_id';
             $params['assigned_driver_id'] = (int) $filters['assigned_driver_id'];
         }
 
-        $sql = 'SELECT * FROM deliveries';
+        if (!empty($filters['store_id'])) {
+            $where[] = 'd.store_id = :store_id';
+            $params['store_id'] = (int) $filters['store_id'];
+        }
+
+        $sql = 'SELECT d.*, o.name AS store_name FROM deliveries d LEFT JOIN organizations o ON o.id = d.store_id';
         if (count($where) > 0) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
-        $sql .= ' ORDER BY created_at DESC LIMIT 200';
+        $sql .= ' ORDER BY d.created_at DESC LIMIT 200';
 
         $stmt = $this->pdo()->prepare($sql);
         $stmt->execute($params);
@@ -213,7 +236,12 @@ final class DeliveryRepository extends BaseRepository
     public function listByDriver(int $driverId): array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT * FROM deliveries WHERE assigned_driver_id = :driver_id ORDER BY created_at DESC LIMIT 200'
+            'SELECT d.*, o.name AS store_name
+             FROM deliveries d
+             LEFT JOIN organizations o ON o.id = d.store_id
+             WHERE d.assigned_driver_id = :driver_id
+             ORDER BY d.created_at DESC
+             LIMIT 200'
         );
         $stmt->execute(['driver_id' => $driverId]);
         $rows = $stmt->fetchAll();

@@ -11,9 +11,9 @@
             <?php endforeach; ?>
         </select>
         <select name="driver_id" required>
-            <option value="">Select driver</option>
+            <option value="">Select rider</option>
             <?php foreach ($drivers as $driver): ?>
-                <option value="<?= h($driver['id']) ?>">#<?= h($driver['id']) ?> <?= h($driver['user_name'] ?? 'Driver') ?></option>
+                <option value="<?= h($driver['id']) ?>">#<?= h($driver['id']) ?> <?= h($driver['user_name'] ?? 'Rider') ?></option>
             <?php endforeach; ?>
         </select>
         <input type="text" name="note" placeholder="note">
@@ -27,13 +27,13 @@
         <select name="delivery_id" required>
             <option value="">Select assigned delivery</option>
             <?php foreach ($assigned as $item): ?>
-                <option value="<?= h($item['id']) ?>">#<?= h($item['id']) ?> - Driver #<?= h($item['assigned_driver_id'] ?: '-') ?></option>
+                <option value="<?= h($item['id']) ?>">#<?= h($item['id']) ?> - Rider #<?= h($item['assigned_driver_id'] ?: '-') ?></option>
             <?php endforeach; ?>
         </select>
         <select name="driver_id" required>
-            <option value="">Select new driver</option>
+            <option value="">Select new rider</option>
             <?php foreach ($drivers as $driver): ?>
-                <option value="<?= h($driver['id']) ?>">#<?= h($driver['id']) ?> <?= h($driver['user_name'] ?? 'Driver') ?></option>
+                <option value="<?= h($driver['id']) ?>">#<?= h($driver['id']) ?> <?= h($driver['user_name'] ?? 'Rider') ?></option>
             <?php endforeach; ?>
         </select>
         <input type="text" name="note" placeholder="reassign note">
@@ -58,7 +58,7 @@
 <div class="card table-wrap">
     <h3>Assigned Deliveries</h3>
     <table>
-        <thead><tr><th>ID</th><th>Status</th><th>Driver</th><th>Pickup</th><th>Dropoff</th></tr></thead>
+        <thead><tr><th>ID</th><th>Status</th><th>Rider</th><th>Pickup</th><th>Dropoff</th></tr></thead>
         <tbody>
         <?php foreach ($assigned as $item): ?>
             <tr>

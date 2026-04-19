@@ -1,7 +1,7 @@
 <?php declare(strict_types=1); ?>
 <div class="card auth-card">
     <h1>Delivery SaaS Login</h1>
-    <p class="muted">Default seed account: `admin@tububox.local / admin123`</p>
+    <p class="muted">Seed accounts: `admin@tububox.local`, `merchant@tububox.local`, `operator@tububox.local`, `rider@tububox.local` (password: `admin123`)</p>
 
     <?php if (!empty($errors['auth'])): ?>
         <div class="alert alert-error"><?= h($errors['auth']) ?></div>
@@ -19,4 +19,3 @@
         <button type="submit" class="btn">Sign In</button>
     </form>
 </div>
-

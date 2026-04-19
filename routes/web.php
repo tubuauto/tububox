@@ -65,7 +65,7 @@ $apiKeyService = new ApiKeyService($apiKeys, $auditService);
 $organizationService = new OrganizationService($organizations, $auditService);
 $tenantUserService = new TenantUserService($users, $organizations, $drivers, $auditService);
 $webhookService = new WebhookService($webhooks);
-$deliveryService = new DeliveryService($deliveries, $deliveryLogs, $tracking, new DeliveryPolicy(new TenantPolicy()), $webhookService);
+$deliveryService = new DeliveryService($deliveries, $deliveryLogs, $tracking, $organizations, new DeliveryPolicy(new TenantPolicy()), $webhookService);
 $dispatchService = new DispatchService($deliveryService, $drivers, $assignments);
 $driverService = new DriverFulfillmentService($deliveryService, $deliveries, $deliveryLogs, $drivers, $proofs, $codCollections);
 
@@ -75,17 +75,17 @@ $auditLogPageController = new AuditLogPageController($view, $auditLogs);
 $organizationPageController = new OrganizationPageController($view, $organizationService);
 $userManagementPageController = new UserManagementPageController($view, $tenantUserService);
 $dashboardController = new DashboardController($view, $dashboardRepo);
-$deliveryPageController = new DeliveryPageController($view, $deliveryService, $deliveryLogs);
+$deliveryPageController = new DeliveryPageController($view, $deliveryService, $deliveryLogs, $organizations);
 $dispatchPageController = new DispatchPageController($view, $deliveries, $drivers, $dispatchService);
 $driverPageController = new DriverPageController($view, $drivers, $deliveries, $deliveryLogs, $deliveryService, $driverService);
 $webhookPageController = new WebhookPageController($view, $webhookService);
 
 $sessionAuth = new SessionAuthMiddleware($authService);
 $tenantScope = new TenantScopeMiddleware();
-$merchantRole = new RoleMiddleware(['admin', 'tenant_admin', 'operator', 'dispatcher']);
-$ownerRole = new RoleMiddleware(['admin', 'tenant_admin']);
-$dispatchRole = new RoleMiddleware(['admin', 'tenant_admin', 'dispatcher']);
-$driverRole = new RoleMiddleware(['admin', 'driver']);
+$merchantRole = new RoleMiddleware(['admin', 'merchant', 'operator']);
+$ownerRole = new RoleMiddleware(['admin', 'merchant']);
+$dispatchRole = new RoleMiddleware(['admin', 'merchant', 'operator']);
+$riderRole = new RoleMiddleware(['admin', 'rider']);
 
 $router->add('GET', '/', static function () use ($authService): Response {
     return $authService->user() === null ? Response::redirect('/login') : Response::redirect('/dashboard');
@@ -105,6 +105,8 @@ $router->add('POST', '/api-keys/{id}/rotate', [$apiKeyPageController, 'rotate'],
 $router->add('GET', '/audit-logs', [$auditLogPageController, 'index'], [$sessionAuth, $tenantScope, $ownerRole]);
 $router->add('GET', '/organizations', [$organizationPageController, 'index'], [$sessionAuth, $tenantScope, $ownerRole]);
 $router->add('POST', '/organizations/create', [$organizationPageController, 'create'], [$sessionAuth, $tenantScope, $ownerRole]);
+$router->add('GET', '/stores', [$organizationPageController, 'index'], [$sessionAuth, $tenantScope, $ownerRole]);
+$router->add('POST', '/stores/create', [$organizationPageController, 'create'], [$sessionAuth, $tenantScope, $ownerRole]);
 $router->add('GET', '/users', [$userManagementPageController, 'index'], [$sessionAuth, $tenantScope, $ownerRole]);
 $router->add('POST', '/users/create', [$userManagementPageController, 'create'], [$sessionAuth, $tenantScope, $ownerRole]);
 
@@ -123,6 +125,9 @@ $router->add('POST', '/webhooks', [$webhookPageController, 'store'], [$sessionAu
 $router->add('POST', '/webhooks/{id}/update', [$webhookPageController, 'update'], [$sessionAuth, $tenantScope, $merchantRole]);
 $router->add('POST', '/webhooks/{id}/delete', [$webhookPageController, 'destroy'], [$sessionAuth, $tenantScope, $merchantRole]);
 
-$router->add('GET', '/driver/deliveries', [$driverPageController, 'index'], [$sessionAuth, $tenantScope, $driverRole]);
-$router->add('GET', '/driver/deliveries/{id}', [$driverPageController, 'show'], [$sessionAuth, $tenantScope, $driverRole]);
-$router->add('POST', '/driver/deliveries/{id}/{action}', [$driverPageController, 'action'], [$sessionAuth, $tenantScope, $driverRole]);
+$router->add('GET', '/driver/deliveries', [$driverPageController, 'index'], [$sessionAuth, $tenantScope, $riderRole]);
+$router->add('GET', '/driver/deliveries/{id}', [$driverPageController, 'show'], [$sessionAuth, $tenantScope, $riderRole]);
+$router->add('POST', '/driver/deliveries/{id}/{action}', [$driverPageController, 'action'], [$sessionAuth, $tenantScope, $riderRole]);
+$router->add('GET', '/rider/deliveries', [$driverPageController, 'index'], [$sessionAuth, $tenantScope, $riderRole]);
+$router->add('GET', '/rider/deliveries/{id}', [$driverPageController, 'show'], [$sessionAuth, $tenantScope, $riderRole]);
+$router->add('POST', '/rider/deliveries/{id}/{action}', [$driverPageController, 'action'], [$sessionAuth, $tenantScope, $riderRole]);
