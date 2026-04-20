@@ -10,8 +10,14 @@
 <?php endif; ?>
 
 <form method="post" action="/marketplace/orders" class="card form-grid">
-    <h3>Store</h3>
-    <select name="store_id" required>
+    <h3>Pickup Mode</h3>
+    <select name="pickup_mode">
+        <option value="store" <?= (($old['pickup_mode'] ?? 'store') === 'store') ? 'selected' : '' ?>>Store Pickup</option>
+        <option value="custom" <?= (($old['pickup_mode'] ?? '') === 'custom') ? 'selected' : '' ?>>Custom Pickup</option>
+    </select>
+
+    <h3>Store Pickup (for pickup_mode=store)</h3>
+    <select name="store_id">
         <option value="">Select store</option>
         <?php foreach (($stores ?? []) as $store): ?>
             <option value="<?= h($store['id']) ?>" <?= ((string) ($old['store_id'] ?? '') === (string) $store['id']) ? 'selected' : '' ?>>
@@ -19,6 +25,25 @@
             </option>
         <?php endforeach; ?>
     </select>
+
+    <h3>Custom Pickup (for pickup_mode=custom)</h3>
+    <select name="tenant_id">
+        <option value="">Select fulfillment merchant</option>
+        <?php foreach (($merchants ?? []) as $merchant): ?>
+            <option value="<?= h($merchant['id']) ?>" <?= ((string) ($old['tenant_id'] ?? '') === (string) $merchant['id']) ? 'selected' : '' ?>>
+                #<?= h($merchant['id']) ?> <?= h($merchant['name']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <div class="card-grid two">
+        <input type="text" name="pickup_name" placeholder="pickup contact name" value="<?= h($old['pickup_name'] ?? '') ?>">
+        <input type="text" name="pickup_phone" placeholder="pickup contact phone" value="<?= h($old['pickup_phone'] ?? '') ?>">
+    </div>
+    <input type="text" name="pickup_address" placeholder="pickup address" value="<?= h($old['pickup_address'] ?? '') ?>">
+    <div class="card-grid two">
+        <input type="number" step="0.0000001" name="pickup_lat" placeholder="pickup lat (optional)" value="<?= h($old['pickup_lat'] ?? '') ?>">
+        <input type="number" step="0.0000001" name="pickup_lng" placeholder="pickup lng (optional)" value="<?= h($old['pickup_lng'] ?? '') ?>">
+    </div>
 
     <h3>Source</h3>
     <input type="text" name="source_order_no" placeholder="source_order_no (optional)" value="<?= h($old['source_order_no'] ?? '') ?>">

@@ -8,6 +8,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Repositories\DeliveryLogRepository;
 use App\Repositories\OrganizationRepository;
+use App\Repositories\TenantRepository;
 use App\Services\DeliveryService;
 use Throwable;
 
@@ -17,7 +18,8 @@ final class MarketplacePageController extends BaseWebController
         \App\Core\View $view,
         private readonly DeliveryService $deliveries,
         private readonly DeliveryLogRepository $deliveryLogs,
-        private readonly OrganizationRepository $organizations
+        private readonly OrganizationRepository $organizations,
+        private readonly TenantRepository $tenants
     ) {
         parent::__construct($view);
     }
@@ -52,11 +54,13 @@ final class MarketplacePageController extends BaseWebController
 
         try {
             $stores = $this->organizations->listMarketplaceStores();
+            $merchants = $this->tenants->listActiveMerchants();
             return $this->render('marketplace.create', [
                 'auth' => $auth,
                 'stores' => $stores,
+                'merchants' => $merchants,
                 'errors' => [],
-                'old' => [],
+                'old' => ['pickup_mode' => 'store'],
             ]);
         } catch (Throwable $e) {
             return Response::html('<h1>400</h1><p>' . h($e->getMessage()) . '</p>', 400);
@@ -71,17 +75,52 @@ final class MarketplacePageController extends BaseWebController
         }
 
         $input = $request->body();
+        $pickupMode = strtolower(trim((string) ($input['pickup_mode'] ?? 'store')));
         $storeId = (int) ($input['store_id'] ?? 0);
+        $tenantId = (int) ($input['tenant_id'] ?? 0);
 
         try {
-            $store = $this->organizations->findById($storeId);
-            if ($store === null) {
-                throw new \RuntimeException('Store not found.');
-            }
+            $store = null;
+            $pickup = [];
 
-            $tenantId = (int) ($store['tenant_id'] ?? 0);
-            if ($tenantId <= 0) {
-                throw new \RuntimeException('Store tenant is invalid.');
+            if ($pickupMode === 'custom') {
+                $tenant = $this->tenants->findById($tenantId);
+                if ($tenant === null || (string) ($tenant['status'] ?? '') !== 'active') {
+                    throw new \RuntimeException('Please select a valid merchant.');
+                }
+
+                $pickupName = trim((string) ($input['pickup_name'] ?? ''));
+                $pickupAddress = trim((string) ($input['pickup_address'] ?? ''));
+                if ($pickupName === '' || $pickupAddress === '') {
+                    throw new \RuntimeException('Pickup contact and pickup address are required for custom pickup.');
+                }
+
+                $pickup = [
+                    'name' => $pickupName,
+                    'phone' => $input['pickup_phone'] ?? null,
+                    'address' => $pickupAddress,
+                    'lat' => isset($input['pickup_lat']) && trim((string) $input['pickup_lat']) !== '' ? (float) $input['pickup_lat'] : null,
+                    'lng' => isset($input['pickup_lng']) && trim((string) $input['pickup_lng']) !== '' ? (float) $input['pickup_lng'] : null,
+                ];
+                $storeId = 0;
+            } else {
+                $store = $this->organizations->findById($storeId);
+                if ($store === null) {
+                    throw new \RuntimeException('Store not found.');
+                }
+
+                $tenantId = (int) ($store['tenant_id'] ?? 0);
+                if ($tenantId <= 0) {
+                    throw new \RuntimeException('Store tenant is invalid.');
+                }
+
+                $pickup = [
+                    'name' => (string) ($store['name'] ?? 'Store'),
+                    'phone' => null,
+                    'address' => (string) ($store['address'] ?? ''),
+                    'lat' => $store['lat'] ?? null,
+                    'lng' => $store['lng'] ?? null,
+                ];
             }
 
             $sourceOrderNo = trim((string) ($input['source_order_no'] ?? ''));
@@ -90,19 +129,13 @@ final class MarketplacePageController extends BaseWebController
             }
 
             $payload = [
-                'store_id' => $storeId,
+                'store_id' => $storeId > 0 ? $storeId : null,
                 'source_type' => 'marketplace',
                 'source_platform' => 'tububox_marketplace',
                 'source_order_no' => $sourceOrderNo,
                 'external_ref' => $input['external_ref'] ?? null,
                 'idempotency_key' => $input['idempotency_key'] ?? null,
-                'pickup' => [
-                    'name' => (string) ($store['name'] ?? 'Store'),
-                    'phone' => null,
-                    'address' => (string) ($store['address'] ?? ''),
-                    'lat' => $store['lat'] ?? null,
-                    'lng' => $store['lng'] ?? null,
-                ],
+                'pickup' => $pickup,
                 'dropoff' => [
                     'name' => $input['dropoff_name'] ?? '',
                     'phone' => $input['dropoff_phone'] ?? null,
@@ -132,10 +165,12 @@ final class MarketplacePageController extends BaseWebController
             return $this->redirect('/marketplace/orders/' . $deliveryId);
         } catch (Throwable $e) {
             $stores = $this->organizations->listMarketplaceStores();
+            $merchants = $this->tenants->listActiveMerchants();
             $decoded = json_decode($e->getMessage(), true);
             return $this->render('marketplace.create', [
                 'auth' => $auth,
                 'stores' => $stores,
+                'merchants' => $merchants,
                 'errors' => is_array($decoded) ? $decoded : ['general' => $e->getMessage()],
                 'old' => $input,
             ]);

@@ -25,6 +25,7 @@ Current Phase 1 implementation includes:
 - Dispatch APIs and rider fulfillment APIs (accept/pickup/sign/complete/COD/tracking)
 - Web UI baseline (login, dashboard, merchant delivery pages, dispatch page, rider H5 page)
 - Marketplace user module (create order / my orders / order detail)
+  - Supports both `Store Pickup` and `Custom Pickup` user order modes
 
 Phase 2 hardening completed:
 
