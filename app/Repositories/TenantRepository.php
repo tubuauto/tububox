@@ -41,5 +41,24 @@ final class TenantRepository extends BaseRepository
 
         return is_array($row) ? $row : null;
     }
+
+    public function resolveDefaultFulfillmentTenantId(): ?int
+    {
+        $stmt = $this->pdo()->prepare(
+            "SELECT id
+             FROM tenants
+             WHERE status = :status
+               AND type IN ('platform', 'merchant')
+             ORDER BY CASE WHEN type = 'platform' THEN 0 ELSE 1 END ASC, id ASC
+             LIMIT 1"
+        );
+        $stmt->execute(['status' => 'active']);
+        $id = $stmt->fetchColumn();
+        if ($id === false || $id === null) {
+            return null;
+        }
+
+        return (int) $id;
+    }
 }
 

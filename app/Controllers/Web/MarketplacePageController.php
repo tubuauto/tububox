@@ -54,11 +54,9 @@ final class MarketplacePageController extends BaseWebController
 
         try {
             $stores = $this->organizations->listMarketplaceStores();
-            $merchants = $this->tenants->listActiveMerchants();
             return $this->render('marketplace.create', [
                 'auth' => $auth,
                 'stores' => $stores,
-                'merchants' => $merchants,
                 'errors' => [],
                 'old' => ['pickup_mode' => 'store'],
             ]);
@@ -77,16 +75,16 @@ final class MarketplacePageController extends BaseWebController
         $input = $request->body();
         $pickupMode = strtolower(trim((string) ($input['pickup_mode'] ?? 'store')));
         $storeId = (int) ($input['store_id'] ?? 0);
-        $tenantId = (int) ($input['tenant_id'] ?? 0);
+        $tenantId = 0;
 
         try {
             $store = null;
             $pickup = [];
 
             if ($pickupMode === 'custom') {
-                $tenant = $this->tenants->findById($tenantId);
-                if ($tenant === null || (string) ($tenant['status'] ?? '') !== 'active') {
-                    throw new \RuntimeException('Please select a valid merchant.');
+                $tenantId = (int) ($this->tenants->resolveDefaultFulfillmentTenantId() ?? 0);
+                if ($tenantId <= 0) {
+                    throw new \RuntimeException('No active fulfillment network found. Please contact admin.');
                 }
 
                 $pickupName = trim((string) ($input['pickup_name'] ?? ''));
@@ -165,12 +163,10 @@ final class MarketplacePageController extends BaseWebController
             return $this->redirect('/marketplace/orders/' . $deliveryId);
         } catch (Throwable $e) {
             $stores = $this->organizations->listMarketplaceStores();
-            $merchants = $this->tenants->listActiveMerchants();
             $decoded = json_decode($e->getMessage(), true);
             return $this->render('marketplace.create', [
                 'auth' => $auth,
                 'stores' => $stores,
-                'merchants' => $merchants,
                 'errors' => is_array($decoded) ? $decoded : ['general' => $e->getMessage()],
                 'old' => $input,
             ]);

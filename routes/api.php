@@ -22,6 +22,7 @@ use App\Repositories\DeliveryTrackingRepository;
 use App\Repositories\DriverRepository;
 use App\Repositories\ProofOfDeliveryRepository;
 use App\Repositories\OrganizationRepository;
+use App\Repositories\TenantRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\WebhookRepository;
 use App\Services\AuthService;
@@ -34,6 +35,7 @@ $users = new UserRepository($db);
 $apiKeys = new ApiKeyRepository($db);
 $drivers = new DriverRepository($db);
 $organizations = new OrganizationRepository($db);
+$tenants = new TenantRepository($db);
 $deliveries = new DeliveryRepository($db);
 $deliveryLogs = new DeliveryLogRepository($db);
 $tracking = new DeliveryTrackingRepository($db);
@@ -48,7 +50,7 @@ $deliveryService = new DeliveryService($deliveries, $deliveryLogs, $tracking, $o
 $dispatchService = new DispatchService($deliveryService, $drivers, $assignments);
 $driverService = new DriverFulfillmentService($deliveryService, $deliveries, $deliveryLogs, $drivers, $proofs, $codCollections);
 
-$deliveryController = new DeliveryController($deliveryService, $deliveryLogs);
+$deliveryController = new DeliveryController($deliveryService, $deliveryLogs, $tenants);
 $dispatchController = new DispatchController($dispatchService);
 $driverController = new DriverController($driverService, $deliveryService);
 $webhookController = new WebhookController($webhooks);

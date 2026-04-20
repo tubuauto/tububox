@@ -27,14 +27,7 @@
     </select>
 
     <h3>Custom Pickup (for pickup_mode=custom)</h3>
-    <select name="tenant_id">
-        <option value="">Select fulfillment merchant</option>
-        <?php foreach (($merchants ?? []) as $merchant): ?>
-            <option value="<?= h($merchant['id']) ?>" <?= ((string) ($old['tenant_id'] ?? '') === (string) $merchant['id']) ? 'selected' : '' ?>>
-                #<?= h($merchant['id']) ?> <?= h($merchant['name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
+    <p class="muted">Custom pickup orders are created directly by user and routed into the fulfillment network automatically.</p>
     <div class="card-grid two">
         <input type="text" name="pickup_name" placeholder="pickup contact name" value="<?= h($old['pickup_name'] ?? '') ?>">
         <input type="text" name="pickup_phone" placeholder="pickup contact phone" value="<?= h($old['pickup_phone'] ?? '') ?>">

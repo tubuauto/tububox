@@ -7,6 +7,7 @@ namespace App\Controllers\Api;
 use App\Core\Request;
 use App\Core\Response;
 use App\Repositories\DeliveryLogRepository;
+use App\Repositories\TenantRepository;
 use App\Services\DeliveryService;
 use Throwable;
 
@@ -14,7 +15,8 @@ final class DeliveryController extends BaseApiController
 {
     public function __construct(
         private readonly DeliveryService $deliveryService,
-        private readonly DeliveryLogRepository $deliveryLogs
+        private readonly DeliveryLogRepository $deliveryLogs,
+        private readonly TenantRepository $tenants
     ) {
     }
 
@@ -60,11 +62,34 @@ final class DeliveryController extends BaseApiController
                 return $this->error('Unauthorized', [], 401, 'UNAUTHORIZED', $request);
             }
 
-            $tenantId = (int) $request->input('tenant_id', 0);
+            $requestedTenantId = (int) $request->input('tenant_id', 0);
+            $authTenantId = (int) ($auth['tenant_id'] ?? 0);
+            $role = (string) ($auth['role'] ?? '');
+
+            $tenantId = $requestedTenantId;
+            if ($tenantId <= 0) {
+                if ($role === 'user') {
+                    $tenantId = (int) ($this->tenants->resolveDefaultFulfillmentTenantId() ?? 0);
+                } else {
+                    $tenantId = $authTenantId;
+                }
+            }
+
             if ($tenantId <= 0) {
                 return $this->error(
-                    message: 'tenant_id is required',
-                    errors: ['tenant_id' => 'tenant_id is required'],
+                    message: 'tenant_id is required for this role',
+                    errors: ['tenant_id' => 'tenant_id is required for this role'],
+                    status: 422,
+                    errorCode: 'VALIDATION_FAILED',
+                    request: $request
+                );
+            }
+
+            $tenant = $this->tenants->findById($tenantId);
+            if ($tenant === null || (string) ($tenant['status'] ?? '') !== 'active') {
+                return $this->error(
+                    message: 'tenant_id is invalid',
+                    errors: ['tenant_id' => 'tenant_id is invalid'],
                     status: 422,
                     errorCode: 'VALIDATION_FAILED',
                     request: $request

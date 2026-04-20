@@ -26,6 +26,7 @@ Current Phase 1 implementation includes:
 - Web UI baseline (login, dashboard, merchant delivery pages, dispatch page, rider H5 page)
 - Marketplace user module (create order / my orders / order detail)
   - Supports both `Store Pickup` and `Custom Pickup` user order modes
+  - `Custom Pickup` is user-self-service and auto-routed to fulfillment network tenant (no merchant selection needed)
 
 Phase 2 hardening completed:
 
@@ -128,6 +129,8 @@ Use request headers:
 - `POST /api/v1/webhook-endpoints/{id}/delete`
 
 API response contract:
+
+- `POST /api/v1/marketplace/orders`: `tenant_id` is optional for `user` role (system auto-resolves default fulfillment tenant)
 
 - Success: `success`, `message`, `data`, `meta`
 - Error: `success`, `message`, `error_code`, `errors`, `meta`
