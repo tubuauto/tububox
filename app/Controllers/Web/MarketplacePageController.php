@@ -36,6 +36,7 @@ final class MarketplacePageController extends BaseWebController
                 'auth' => $auth,
                 'items' => $items,
                 'query' => $request->query(),
+                'flash' => $this->pullFlash(),
             ]);
         } catch (Throwable $e) {
             return Response::html('<h1>400</h1><p>' . h($e->getMessage()) . '</p>', 400);
@@ -152,15 +153,64 @@ final class MarketplacePageController extends BaseWebController
             $id = (int) $request->attribute('id');
             $delivery = $this->deliveries->getMarketplaceForUserOrFail($auth, $id);
             $latestLogs = $this->deliveryLogs->listLatestByDelivery($id, 10);
+            $allLogs = $this->deliveryLogs->listByDelivery($id);
+            $tracking = $this->deliveries->tracking($id);
 
             return $this->render('marketplace.show', [
                 'auth' => $auth,
                 'delivery' => $delivery,
                 'latest_logs' => $latestLogs,
+                'logs' => $allLogs,
+                'tracking' => $tracking,
+                'flash' => $this->pullFlash(),
             ]);
         } catch (Throwable $e) {
             return Response::html('<h1>400</h1><p>' . h($e->getMessage()) . '</p>', 400);
         }
+    }
+
+    public function cancel(Request $request): Response
+    {
+        $auth = $request->attribute('auth');
+        if (!is_array($auth)) {
+            return $this->redirect('/login');
+        }
+
+        $id = (int) $request->attribute('id');
+        try {
+            $this->deliveries->cancelMarketplaceForUser(
+                $auth,
+                $id,
+                (string) ($request->input('reason') ?? 'Cancelled by marketplace user')
+            );
+            $this->pushFlash('success', 'Order cancelled successfully.');
+        } catch (Throwable $e) {
+            $this->pushFlash('error', $e->getMessage());
+        }
+
+        return $this->redirect('/marketplace/orders/' . $id);
+    }
+
+    private function pushFlash(string $type, string $message): void
+    {
+        $_SESSION['marketplace_flash'] = ['type' => $type, 'message' => $message];
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    private function pullFlash(): ?array
+    {
+        $flash = $_SESSION['marketplace_flash'] ?? null;
+        if (!is_array($flash)) {
+            return null;
+        }
+
+        unset($_SESSION['marketplace_flash']);
+        return [
+            'type' => (string) ($flash['type'] ?? ''),
+            'message' => (string) ($flash['message'] ?? ''),
+        ];
     }
 }
 

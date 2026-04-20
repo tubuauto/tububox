@@ -122,6 +122,7 @@ $router->add('GET', '/marketplace/orders', [$marketplacePageController, 'index']
 $router->add('GET', '/marketplace/orders/create', [$marketplacePageController, 'createForm'], [$sessionAuth, $userRole]);
 $router->add('POST', '/marketplace/orders', [$marketplacePageController, 'store'], [$sessionAuth, $userRole]);
 $router->add('GET', '/marketplace/orders/{id}', [$marketplacePageController, 'show'], [$sessionAuth, $userRole]);
+$router->add('POST', '/marketplace/orders/{id}/cancel', [$marketplacePageController, 'cancel'], [$sessionAuth, $userRole]);
 
 $router->add('GET', '/dispatch', [$dispatchPageController, 'index'], [$sessionAuth, $tenantScope, $dispatchRole]);
 $router->add('POST', '/dispatch/assign', [$dispatchPageController, 'assign'], [$sessionAuth, $tenantScope, $dispatchRole]);

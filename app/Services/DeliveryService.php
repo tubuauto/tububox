@@ -226,9 +226,13 @@ final class DeliveryService
      */
     public function listMarketplaceForUser(array $auth, array $filters = []): array
     {
+        $view = strtolower(trim((string) ($filters['view'] ?? '')));
+        unset($filters['view']);
+
         if (($auth['is_admin'] ?? false) === true) {
             $filters['source_type'] = 'marketplace';
-            return $this->deliveries->list($filters, null, true);
+            $items = $this->deliveries->list($filters, null, true);
+            return $this->applyMarketplaceViewFilter($items, $view);
         }
 
         $role = (string) ($auth['role'] ?? '');
@@ -239,8 +243,8 @@ final class DeliveryService
 
         $filters['source_type'] = 'marketplace';
         $filters['requester_user_id'] = $userId;
-
-        return $this->deliveries->list($filters, null, true);
+        $items = $this->deliveries->list($filters, null, true);
+        return $this->applyMarketplaceViewFilter($items, $view);
     }
 
     /**
@@ -273,6 +277,40 @@ final class DeliveryService
         }
 
         return $delivery;
+    }
+
+    /**
+     * @param array<string, mixed> $auth
+     * @return array<string, mixed>
+     */
+    public function cancelMarketplaceForUser(array $auth, int $deliveryId, ?string $reason = null): array
+    {
+        $delivery = $this->getMarketplaceForUserOrFail($auth, $deliveryId);
+        $status = (string) ($delivery['status'] ?? '');
+        if (!in_array($status, [DeliveryStatus::PENDING, DeliveryStatus::ASSIGNED], true)) {
+            throw new BadRequestException(
+                'Marketplace order can only be cancelled in pending or assigned status.',
+                ['status' => 'Only pending/assigned orders can be cancelled.']
+            );
+        }
+
+        $this->deliveries->updateStatus($deliveryId, DeliveryStatus::CANCELLED);
+        $updated = $this->deliveries->findById($deliveryId);
+        if ($updated === null) {
+            throw new NotFoundException('Delivery not found after cancellation.');
+        }
+
+        $this->deliveryLogs->create(
+            deliveryId: $deliveryId,
+            status: DeliveryStatus::CANCELLED,
+            note: $reason !== null && trim($reason) !== '' ? $reason : 'Cancelled by marketplace user',
+            actorType: (string) ($auth['role'] ?? 'user'),
+            actorId: isset($auth['id']) ? (int) $auth['id'] : null
+        );
+
+        $this->webhooks->dispatchDeliveryStatus($updated);
+
+        return $updated;
     }
 
     /**
@@ -349,5 +387,39 @@ final class DeliveryService
         $payload['source_type'] = $mapped;
 
         return $payload;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyMarketplaceViewFilter(array $items, string $view): array
+    {
+        if ($view === '') {
+            return $items;
+        }
+
+        $allowed = match ($view) {
+            'in_progress' => [
+                DeliveryStatus::PENDING,
+                DeliveryStatus::ASSIGNED,
+                DeliveryStatus::DRIVER_ARRIVING_PICKUP,
+                DeliveryStatus::PICKED_UP,
+                DeliveryStatus::IN_TRANSIT,
+                DeliveryStatus::ARRIVED,
+                DeliveryStatus::SIGNED,
+            ],
+            'completed' => [DeliveryStatus::COMPLETED],
+            'cancelled' => [DeliveryStatus::CANCELLED, DeliveryStatus::FAILED],
+            default => [],
+        };
+
+        if (count($allowed) === 0) {
+            return $items;
+        }
+
+        $filtered = array_values(array_filter($items, static fn (array $item): bool => in_array((string) ($item['status'] ?? ''), $allowed, true)));
+
+        return $filtered;
     }
 }

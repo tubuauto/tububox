@@ -139,6 +139,27 @@ final class DeliveryController extends BaseApiController
         }
     }
 
+    public function cancelMarketplace(Request $request): Response
+    {
+        try {
+            $auth = $request->attribute('auth');
+            if (!is_array($auth)) {
+                return $this->error('Unauthorized', [], 401, 'UNAUTHORIZED', $request);
+            }
+
+            $deliveryId = (int) $request->attribute('id');
+            $updated = $this->deliveryService->cancelMarketplaceForUser(
+                $auth,
+                $deliveryId,
+                (string) ($request->input('reason') ?? 'Cancelled by marketplace user')
+            );
+
+            return $this->success('Marketplace order cancelled', ['delivery' => $updated], request: $request);
+        } catch (Throwable $e) {
+            return $this->handleException($e, $request);
+        }
+    }
+
     public function index(Request $request): Response
     {
         try {

@@ -101,6 +101,7 @@ Use request headers:
 - `POST /api/v1/marketplace/orders`
 - `GET /api/v1/marketplace/orders`
 - `GET /api/v1/marketplace/orders/{id}`
+- `POST /api/v1/marketplace/orders/{id}/cancel`
 - `POST /api/v1/dispatch/assign`
 - `POST /api/v1/dispatch/reassign`
 - `POST /api/v1/dispatch/mark-failed`
