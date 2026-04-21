@@ -9,10 +9,17 @@
 
 <div class="card">
     <p>Status: <span class="badge"><?= h($delivery['status']) ?></span></p>
-    <p class="muted">`Accept` only confirms acceptance and writes a log. Status changes start from `Arrive Pickup`.</p>
+    <p class="muted">For grab orders: claim first, then continue with pickup and delivery actions.</p>
     <p>Pickup: <?= h($delivery['pickup_address']) ?></p>
     <p>Dropoff: <?= h($delivery['dropoff_address']) ?></p>
 </div>
+
+<?php $canClaim = ((string) ($delivery['status'] ?? '') === 'pending') && (int) ($delivery['assigned_driver_id'] ?? 0) <= 0 && (string) ($delivery['payment_status'] ?? '') === 'paid'; ?>
+<?php if ($canClaim): ?>
+    <form method="post" action="/rider/deliveries/<?= h($delivery['id']) ?>/claim" class="card">
+        <button class="btn" type="submit">Claim This Order</button>
+    </form>
+<?php endif; ?>
 
 <div class="card-grid two">
     <form method="post" action="/rider/deliveries/<?= h($delivery['id']) ?>/accept" class="card"><button class="btn btn-light" type="submit">Accept</button></form>

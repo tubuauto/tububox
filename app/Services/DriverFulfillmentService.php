@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Domain\DeliveryStatus;
+use App\Exceptions\BadRequestException;
 use App\Exceptions\ForbiddenException;
 use App\Exceptions\NotFoundException;
 use App\Exceptions\ValidationException;
 use App\Repositories\CodCollectionRepository;
+use App\Repositories\DeliveryAssignmentRepository;
 use App\Repositories\DeliveryLogRepository;
 use App\Repositories\DeliveryRepository;
 use App\Repositories\DriverRepository;
@@ -20,9 +23,86 @@ final class DriverFulfillmentService
         private readonly DeliveryRepository $deliveries,
         private readonly DeliveryLogRepository $deliveryLogs,
         private readonly DriverRepository $drivers,
+        private readonly DeliveryAssignmentRepository $assignments,
         private readonly ProofOfDeliveryRepository $proofs,
-        private readonly CodCollectionRepository $codCollections
+        private readonly CodCollectionRepository $codCollections,
+        private readonly WebhookService $webhooks
     ) {
+    }
+
+    /**
+     * @param array<string, mixed> $auth
+     * @return array<int, array<string, mixed>>
+     */
+    public function listGrabPool(array $auth): array
+    {
+        $driver = $this->drivers->findByUserId((int) ($auth['id'] ?? 0));
+        if ($driver === null) {
+            if (($auth['is_admin'] ?? false) === true) {
+                return [];
+            }
+
+            throw new NotFoundException('Current user is not a rider.');
+        }
+
+        $tenantId = (int) ($driver['tenant_id'] ?? 0);
+        if ($tenantId <= 0) {
+            throw new ForbiddenException('Current rider has no tenant scope.');
+        }
+
+        return $this->deliveries->listGrabPool($tenantId);
+    }
+
+    /**
+     * @param array<string, mixed> $auth
+     * @return array<string, mixed>
+     */
+    public function claim(array $auth, int $deliveryId): array
+    {
+        $delivery = $this->deliveryService->getOrFail($auth, $deliveryId);
+        $driver = $this->drivers->findByUserId((int) ($auth['id'] ?? 0));
+        if ($driver === null) {
+            throw new NotFoundException('Current user is not a rider.');
+        }
+
+        $driverId = (int) $driver['id'];
+        if ((string) ($delivery['source_type'] ?? '') !== 'marketplace') {
+            throw new BadRequestException('Only marketplace orders support rider claim.');
+        }
+
+        if ((string) ($delivery['status'] ?? '') !== DeliveryStatus::PENDING) {
+            throw new BadRequestException('Only pending orders can be claimed.');
+        }
+
+        if ((string) ($delivery['payment_status'] ?? '') !== 'paid') {
+            throw new BadRequestException('Order payment is not completed.');
+        }
+
+        if ((int) ($delivery['assigned_driver_id'] ?? 0) > 0) {
+            throw new BadRequestException('Order already assigned.');
+        }
+
+        $claimed = $this->deliveries->claimByDriver($deliveryId, $driverId);
+        if (!$claimed) {
+            throw new BadRequestException('Order already claimed by another rider.');
+        }
+
+        $this->assignments->create($deliveryId, $driverId, isset($auth['id']) ? (int) $auth['id'] : null, 'Claimed by rider');
+        $this->deliveryLogs->create(
+            deliveryId: $deliveryId,
+            status: DeliveryStatus::ASSIGNED,
+            note: 'Rider claimed order from grab pool',
+            actorType: (string) ($auth['role'] ?? 'rider'),
+            actorId: isset($auth['id']) ? (int) $auth['id'] : null
+        );
+
+        $updated = $this->deliveries->findById($deliveryId);
+        if ($updated === null) {
+            throw new NotFoundException('Delivery not found after claim.');
+        }
+
+        $this->webhooks->dispatchDeliveryStatus($updated);
+        return $updated;
     }
 
     /**

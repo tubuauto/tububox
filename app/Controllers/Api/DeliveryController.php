@@ -111,6 +111,9 @@ final class DeliveryController extends BaseApiController
                     'id' => (int) $delivery['id'],
                     'tenant_id' => (int) $delivery['tenant_id'],
                     'status' => (string) $delivery['status'],
+                    'quote_fee_cents' => (int) ($delivery['quote_fee_cents'] ?? 0),
+                    'quote_currency' => (string) ($delivery['quote_currency'] ?? 'CAD'),
+                    'payment_status' => (string) ($delivery['payment_status'] ?? 'unpaid'),
                     'source_order_no' => $delivery['source_order_no'],
                 ],
                 request: $request
@@ -180,6 +183,28 @@ final class DeliveryController extends BaseApiController
             );
 
             return $this->success('Marketplace order cancelled', ['delivery' => $updated], request: $request);
+        } catch (Throwable $e) {
+            return $this->handleException($e, $request);
+        }
+    }
+
+    public function payMarketplace(Request $request): Response
+    {
+        try {
+            $auth = $request->attribute('auth');
+            if (!is_array($auth)) {
+                return $this->error('Unauthorized', [], 401, 'UNAUTHORIZED', $request);
+            }
+
+            $deliveryId = (int) $request->attribute('id');
+            $updated = $this->deliveryService->payMarketplaceForUser(
+                $auth,
+                $deliveryId,
+                (string) ($request->input('payment_method') ?? 'wallet'),
+                (string) ($request->input('payment_reference') ?? '')
+            );
+
+            return $this->success('Marketplace order paid', ['delivery' => $updated], request: $request);
         } catch (Throwable $e) {
             return $this->handleException($e, $request);
         }

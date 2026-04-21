@@ -10,7 +10,17 @@
     </div>
 <?php endif; ?>
 
-<?php if (in_array((string) ($delivery['status'] ?? ''), ['pending', 'assigned'], true)): ?>
+<?php if ((string) ($delivery['status'] ?? '') === 'awaiting_payment'): ?>
+    <form method="post" action="/marketplace/orders/<?= h($delivery['id']) ?>/pay" class="card form-grid">
+        <h3>Pay And Publish To Grab Pool</h3>
+        <p class="muted">Quote: <?= h($delivery['quote_fee_cents'] ?: $delivery['delivery_fee_cents']) ?> <?= h($delivery['quote_currency'] ?: 'CAD') ?></p>
+        <input type="text" name="payment_method" placeholder="payment method (wallet/card)" value="wallet">
+        <input type="text" name="payment_reference" placeholder="payment reference (optional)">
+        <button class="btn" type="submit">Pay Now</button>
+    </form>
+<?php endif; ?>
+
+<?php if (in_array((string) ($delivery['status'] ?? ''), ['awaiting_payment', 'pending', 'assigned'], true)): ?>
     <form method="post" action="/marketplace/orders/<?= h($delivery['id']) ?>/cancel" class="card form-grid">
         <h3>Cancel Order</h3>
         <input type="text" name="reason" placeholder="cancel reason (optional)">
@@ -36,6 +46,11 @@
     <p>source_order_no: <?= h($delivery['source_order_no'] ?: '-') ?></p>
     <p>external_ref: <?= h($delivery['external_ref'] ?: '-') ?></p>
     <p>delivery_fee_cents: <?= h($delivery['delivery_fee_cents']) ?></p>
+    <p>quote_fee_cents: <?= h($delivery['quote_fee_cents'] ?? '-') ?> <?= h($delivery['quote_currency'] ?? 'CAD') ?></p>
+    <p>quote_distance_km: <?= h($delivery['quote_distance_km'] ?? '-') ?></p>
+    <p>quote_status: <?= h($delivery['quote_status'] ?? '-') ?></p>
+    <p>payment_status: <?= h($delivery['payment_status'] ?? '-') ?></p>
+    <p>payment_amount_cents: <?= h($delivery['payment_amount_cents'] ?? '-') ?></p>
     <p>cod_status: <?= h($delivery['cod_status']) ?></p>
 </div>
 

@@ -55,9 +55,45 @@ final class DeliveryService
         $pricing = is_array($payload['pricing'] ?? null) ? $payload['pricing'] : [];
         $cod = is_array($payload['cod'] ?? null) ? $payload['cod'] : [];
         $sourceType = strtolower(trim((string) ($payload['source_type'] ?? 'merchant_dashboard')));
+        $role = (string) ($auth['role'] ?? '');
 
         if (!$this->canCreateForTenant($auth, $tenantId, $sourceType)) {
             throw new ForbiddenException('No permission to create delivery for another tenant.');
+        }
+
+        $deliveryFeeCents = (int) ($pricing['delivery_fee_cents'] ?? 0);
+        $quoteFeeCents = 0;
+        $quoteCurrency = (string) ($cod['currency'] ?? 'CAD');
+        $quoteDistanceKm = null;
+        $quoteStatus = 'none';
+        $paymentStatus = 'unpaid';
+        $paymentAmountCents = 0;
+        $status = DeliveryStatus::PENDING;
+
+        if ($sourceType === 'marketplace' && $role === 'user') {
+            $quote = $this->buildMarketplaceQuote($pickup, $dropoff, $goods, $cod);
+            $deliveryFeeCents = $quote['delivery_fee_cents'];
+            $quoteFeeCents = $quote['quote_fee_cents'];
+            $quoteCurrency = $quote['currency'];
+            $quoteDistanceKm = $quote['distance_km'];
+            $quoteStatus = 'quoted';
+            $status = DeliveryStatus::AWAITING_PAYMENT;
+        } elseif ($sourceType === 'marketplace') {
+            $quote = $this->buildMarketplaceQuote($pickup, $dropoff, $goods, $cod);
+            if ($deliveryFeeCents <= 0) {
+                $deliveryFeeCents = $quote['delivery_fee_cents'];
+            }
+            $quoteFeeCents = $deliveryFeeCents;
+            $quoteCurrency = $quote['currency'];
+            $quoteDistanceKm = $quote['distance_km'];
+            $quoteStatus = 'accepted';
+            $paymentStatus = 'paid';
+            $paymentAmountCents = $deliveryFeeCents;
+        } else {
+            $quoteFeeCents = max(0, $deliveryFeeCents);
+            $quoteStatus = 'accepted';
+            $paymentStatus = 'paid';
+            $paymentAmountCents = $deliveryFeeCents;
         }
 
         $storeId = $this->resolveStoreId($tenantId, $payload['store_id'] ?? null);
@@ -83,19 +119,32 @@ final class DeliveryService
             'goods_type' => $goods['type'] ?? null,
             'goods_weight' => $goods['weight'] ?? null,
             'goods_note' => $goods['note'] ?? null,
-            'delivery_fee_cents' => (int) ($pricing['delivery_fee_cents'] ?? 0),
+            'delivery_fee_cents' => $deliveryFeeCents,
+            'quote_fee_cents' => $quoteFeeCents,
+            'quote_currency' => $quoteCurrency,
+            'quote_distance_km' => $quoteDistanceKm,
+            'quote_status' => $quoteStatus,
+            'payment_status' => $paymentStatus,
+            'payment_amount_cents' => $paymentAmountCents,
+            'payment_method' => null,
+            'payment_reference' => null,
+            'paid_at' => $paymentStatus === 'paid' ? gmdate('Y-m-d H:i:s') : null,
             'cod_required' => (bool) ($cod['required'] ?? false),
             'cod_amount_cents' => (int) ($cod['amount_cents'] ?? 0),
             'cod_currency' => $cod['currency'] ?? 'CAD',
             'cod_status' => (bool) ($cod['required'] ?? false) ? 'pending' : 'none',
-            'status' => DeliveryStatus::PENDING,
+            'status' => $status,
             'scheduled_at' => $payload['scheduled_at'] ?? null,
         ]);
 
+        $createNote = $status === DeliveryStatus::AWAITING_PAYMENT
+            ? 'Delivery created, quote generated, awaiting payment'
+            : 'Delivery created';
+
         $this->deliveryLogs->create(
             deliveryId: (int) $delivery['id'],
-            status: DeliveryStatus::PENDING,
-            note: 'Delivery created',
+            status: (string) ($delivery['status'] ?? DeliveryStatus::PENDING),
+            note: $createNote,
             actorType: (string) ($auth['role'] ?? 'system'),
             actorId: $auth['id'] ?? null
         );
@@ -287,10 +336,10 @@ final class DeliveryService
     {
         $delivery = $this->getMarketplaceForUserOrFail($auth, $deliveryId);
         $status = (string) ($delivery['status'] ?? '');
-        if (!in_array($status, [DeliveryStatus::PENDING, DeliveryStatus::ASSIGNED], true)) {
+        if (!in_array($status, [DeliveryStatus::AWAITING_PAYMENT, DeliveryStatus::PENDING, DeliveryStatus::ASSIGNED], true)) {
             throw new BadRequestException(
-                'Marketplace order can only be cancelled in pending or assigned status.',
-                ['status' => 'Only pending/assigned orders can be cancelled.']
+                'Marketplace order can only be cancelled in awaiting_payment, pending or assigned status.',
+                ['status' => 'Only awaiting_payment/pending/assigned orders can be cancelled.']
             );
         }
 
@@ -304,6 +353,61 @@ final class DeliveryService
             deliveryId: $deliveryId,
             status: DeliveryStatus::CANCELLED,
             note: $reason !== null && trim($reason) !== '' ? $reason : 'Cancelled by marketplace user',
+            actorType: (string) ($auth['role'] ?? 'user'),
+            actorId: isset($auth['id']) ? (int) $auth['id'] : null
+        );
+
+        $this->webhooks->dispatchDeliveryStatus($updated);
+
+        return $updated;
+    }
+
+    /**
+     * @param array<string, mixed> $auth
+     * @return array<string, mixed>
+     */
+    public function payMarketplaceForUser(
+        array $auth,
+        int $deliveryId,
+        ?string $paymentMethod = null,
+        ?string $paymentReference = null
+    ): array {
+        $delivery = $this->getMarketplaceForUserOrFail($auth, $deliveryId);
+        $status = (string) ($delivery['status'] ?? '');
+        if ($status !== DeliveryStatus::AWAITING_PAYMENT) {
+            throw new BadRequestException(
+                'Marketplace order can only be paid in awaiting_payment status.',
+                ['status' => 'Only awaiting_payment orders can be paid.']
+            );
+        }
+
+        $amountCents = (int) ($delivery['quote_fee_cents'] ?? $delivery['delivery_fee_cents'] ?? 0);
+        if ($amountCents <= 0) {
+            throw new BadRequestException(
+                'Quote amount is invalid.',
+                ['quote_fee_cents' => 'quote_fee_cents must be greater than 0.']
+            );
+        }
+
+        $method = $paymentMethod !== null ? trim($paymentMethod) : '';
+        $reference = $paymentReference !== null ? trim($paymentReference) : '';
+        $this->deliveries->markPaymentPaid(
+            $deliveryId,
+            $amountCents,
+            $method !== '' ? $method : 'wallet',
+            $reference !== '' ? $reference : null
+        );
+        $this->deliveries->updateStatus($deliveryId, DeliveryStatus::PENDING);
+
+        $updated = $this->deliveries->findById($deliveryId);
+        if ($updated === null) {
+            throw new NotFoundException('Delivery not found after payment.');
+        }
+
+        $this->deliveryLogs->create(
+            deliveryId: $deliveryId,
+            status: DeliveryStatus::PENDING,
+            note: 'Payment confirmed, order moved to rider grab pool',
             actorType: (string) ($auth['role'] ?? 'user'),
             actorId: isset($auth['id']) ? (int) $auth['id'] : null
         );
@@ -401,6 +505,7 @@ final class DeliveryService
 
         $allowed = match ($view) {
             'in_progress' => [
+                DeliveryStatus::AWAITING_PAYMENT,
                 DeliveryStatus::PENDING,
                 DeliveryStatus::ASSIGNED,
                 DeliveryStatus::DRIVER_ARRIVING_PICKUP,
@@ -421,5 +526,61 @@ final class DeliveryService
         $filtered = array_values(array_filter($items, static fn (array $item): bool => in_array((string) ($item['status'] ?? ''), $allowed, true)));
 
         return $filtered;
+    }
+
+    /**
+     * @param array<string, mixed> $pickup
+     * @param array<string, mixed> $dropoff
+     * @param array<string, mixed> $goods
+     * @param array<string, mixed> $cod
+     * @return array{delivery_fee_cents:int,quote_fee_cents:int,currency:string,distance_km:float|null}
+     */
+    private function buildMarketplaceQuote(array $pickup, array $dropoff, array $goods, array $cod): array
+    {
+        $distanceKm = $this->estimateDistanceKm(
+            $pickup['lat'] ?? null,
+            $pickup['lng'] ?? null,
+            $dropoff['lat'] ?? null,
+            $dropoff['lng'] ?? null
+        );
+
+        $weight = (float) ($goods['weight'] ?? 0);
+        if ($weight < 0) {
+            $weight = 0.0;
+        }
+
+        $baseFee = 450;
+        $distanceFee = $distanceKm !== null
+            ? (int) round(max(0.0, $distanceKm - 2.0) * 130)
+            : 260;
+        $weightFee = (int) round(max(0.0, $weight - 1.0) * 90);
+        $codFee = (bool) ($cod['required'] ?? false) ? 120 : 0;
+        $fee = max(500, $baseFee + $distanceFee + $weightFee + $codFee);
+
+        return [
+            'delivery_fee_cents' => $fee,
+            'quote_fee_cents' => $fee,
+            'currency' => (string) ($cod['currency'] ?? 'CAD'),
+            'distance_km' => $distanceKm !== null ? round($distanceKm, 2) : null,
+        ];
+    }
+
+    private function estimateDistanceKm(mixed $pickupLat, mixed $pickupLng, mixed $dropoffLat, mixed $dropoffLng): ?float
+    {
+        if (!is_numeric($pickupLat) || !is_numeric($pickupLng) || !is_numeric($dropoffLat) || !is_numeric($dropoffLng)) {
+            return null;
+        }
+
+        $lat1 = deg2rad((float) $pickupLat);
+        $lng1 = deg2rad((float) $pickupLng);
+        $lat2 = deg2rad((float) $dropoffLat);
+        $lng2 = deg2rad((float) $dropoffLng);
+
+        $deltaLat = $lat2 - $lat1;
+        $deltaLng = $lng2 - $lng1;
+        $a = sin($deltaLat / 2) ** 2 + cos($lat1) * cos($lat2) * sin($deltaLng / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(max(0.0, 1 - $a)));
+
+        return 6371 * $c;
     }
 }

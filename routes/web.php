@@ -70,7 +70,7 @@ $tenantUserService = new TenantUserService($users, $organizations, $drivers, $au
 $webhookService = new WebhookService($webhooks);
 $deliveryService = new DeliveryService($deliveries, $deliveryLogs, $tracking, $organizations, new DeliveryPolicy(new TenantPolicy()), $webhookService);
 $dispatchService = new DispatchService($deliveryService, $drivers, $assignments);
-$driverService = new DriverFulfillmentService($deliveryService, $deliveries, $deliveryLogs, $drivers, $proofs, $codCollections);
+$driverService = new DriverFulfillmentService($deliveryService, $deliveries, $deliveryLogs, $drivers, $assignments, $proofs, $codCollections, $webhookService);
 
 $authController = new AuthController($view, $authService, $loginSecurity);
 $apiKeyPageController = new ApiKeyPageController($view, $apiKeyService);
@@ -124,6 +124,7 @@ $router->add('GET', '/marketplace/orders', [$marketplacePageController, 'index']
 $router->add('GET', '/marketplace/orders/create', [$marketplacePageController, 'createForm'], [$sessionAuth, $userRole]);
 $router->add('POST', '/marketplace/orders', [$marketplacePageController, 'store'], [$sessionAuth, $userRole]);
 $router->add('GET', '/marketplace/orders/{id}', [$marketplacePageController, 'show'], [$sessionAuth, $userRole]);
+$router->add('POST', '/marketplace/orders/{id}/pay', [$marketplacePageController, 'pay'], [$sessionAuth, $userRole]);
 $router->add('POST', '/marketplace/orders/{id}/cancel', [$marketplacePageController, 'cancel'], [$sessionAuth, $userRole]);
 
 $router->add('GET', '/dispatch', [$dispatchPageController, 'index'], [$sessionAuth, $tenantScope, $dispatchRole]);

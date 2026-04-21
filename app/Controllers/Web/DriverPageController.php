@@ -35,9 +35,11 @@ final class DriverPageController extends BaseWebController
 
         $driver = $this->drivers->findByUserId((int) ($auth['id'] ?? 0));
         $isAdmin = (bool) ($auth['is_admin'] ?? false);
+        $grabPool = [];
 
         if ($driver !== null) {
             $items = $this->deliveries->listByDriver((int) $driver['id']);
+            $grabPool = $this->driverService->listGrabPool($auth);
         } elseif ($isAdmin) {
             // Admin can inspect and drive the fulfillment flow for assigned deliveries.
             $items = $this->deliveries->list(['status' => 'assigned'], null, true);
@@ -50,6 +52,7 @@ final class DriverPageController extends BaseWebController
             'driver' => $driver,
             'is_admin' => $isAdmin,
             'items' => $items,
+            'grab_pool' => $grabPool,
         ]);
     }
 
@@ -89,6 +92,10 @@ final class DriverPageController extends BaseWebController
         try {
             $message = 'Action completed.';
             switch ($action) {
+                case 'claim':
+                    $this->driverService->claim($auth, $deliveryId);
+                    $message = 'Order claimed successfully.';
+                    break;
                 case 'accept':
                     $this->driverService->accept($auth, $deliveryId);
                     $message = 'Delivery accepted.';

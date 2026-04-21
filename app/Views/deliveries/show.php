@@ -25,6 +25,10 @@
     <p>store: <?= h($delivery['store_name'] ?: '-') ?> (<?= h($delivery['store_id'] ?: '-') ?>)</p>
     <p>assigned_rider_id: <?= h($delivery['assigned_driver_id'] ?: '-') ?></p>
     <p>delivery_fee_cents: <?= h($delivery['delivery_fee_cents']) ?></p>
+    <p>quote_fee_cents: <?= h($delivery['quote_fee_cents'] ?? '-') ?> <?= h($delivery['quote_currency'] ?? 'CAD') ?></p>
+    <p>quote_status: <?= h($delivery['quote_status'] ?? '-') ?></p>
+    <p>payment_status: <?= h($delivery['payment_status'] ?? '-') ?></p>
+    <p>payment_amount_cents: <?= h($delivery['payment_amount_cents'] ?? '-') ?></p>
     <p>cod_status: <?= h($delivery['cod_status']) ?></p>
 </div>
 

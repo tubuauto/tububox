@@ -222,6 +222,29 @@ final class MarketplacePageController extends BaseWebController
         return $this->redirect('/marketplace/orders/' . $id);
     }
 
+    public function pay(Request $request): Response
+    {
+        $auth = $request->attribute('auth');
+        if (!is_array($auth)) {
+            return $this->redirect('/login');
+        }
+
+        $id = (int) $request->attribute('id');
+        try {
+            $this->deliveries->payMarketplaceForUser(
+                $auth,
+                $id,
+                (string) ($request->input('payment_method') ?? 'wallet'),
+                (string) ($request->input('payment_reference') ?? '')
+            );
+            $this->pushFlash('success', 'Payment successful. Order is now in rider grab pool.');
+        } catch (Throwable $e) {
+            $this->pushFlash('error', $e->getMessage());
+        }
+
+        return $this->redirect('/marketplace/orders/' . $id);
+    }
+
     private function pushFlash(string $type, string $message): void
     {
         $_SESSION['marketplace_flash'] = ['type' => $type, 'message' => $message];

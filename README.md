@@ -27,6 +27,7 @@ Current Phase 1 implementation includes:
 - Marketplace user module (create order / my orders / order detail)
   - Supports both `Store Pickup` and `Custom Pickup` user order modes
   - `Custom Pickup` is user-self-service and auto-routed to fulfillment network tenant (no merchant selection needed)
+  - Marketplace order flow: create -> quote -> pay -> rider grab pool -> rider claim -> fulfill
 
 Phase 2 hardening completed:
 
@@ -103,10 +104,13 @@ Use request headers:
 - `POST /api/v1/marketplace/orders`
 - `GET /api/v1/marketplace/orders`
 - `GET /api/v1/marketplace/orders/{id}`
+- `POST /api/v1/marketplace/orders/{id}/pay`
 - `POST /api/v1/marketplace/orders/{id}/cancel`
 - `POST /api/v1/dispatch/assign`
 - `POST /api/v1/dispatch/reassign`
 - `POST /api/v1/dispatch/mark-failed`
+- `GET /api/v1/rider/grab-pool`
+- `POST /api/v1/rider/deliveries/{id}/claim`
 - `POST /api/v1/rider/deliveries/{id}/accept`
 - `POST /api/v1/rider/deliveries/{id}/arrive-pickup`
 - `POST /api/v1/rider/deliveries/{id}/pickup`
@@ -131,6 +135,7 @@ Use request headers:
 API response contract:
 
 - `POST /api/v1/marketplace/orders`: `tenant_id` is optional for `user` role (system auto-resolves default fulfillment tenant)
+- Marketplace user order creates with status `awaiting_payment`; after `pay` it moves to `pending` and enters rider grab pool
 
 - Success: `success`, `message`, `data`, `meta`
 - Error: `success`, `message`, `error_code`, `errors`, `meta`

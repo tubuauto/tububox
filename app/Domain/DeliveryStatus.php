@@ -6,6 +6,7 @@ namespace App\Domain;
 
 final class DeliveryStatus
 {
+    public const AWAITING_PAYMENT = 'awaiting_payment';
     public const PENDING = 'pending';
     public const ASSIGNED = 'assigned';
     public const DRIVER_ARRIVING_PICKUP = 'driver_arriving_pickup';
@@ -21,6 +22,7 @@ final class DeliveryStatus
      * @var array<string, array<int, string>>
      */
     private const FLOW = [
+        self::AWAITING_PAYMENT => [self::PENDING, self::CANCELLED],
         self::PENDING => [self::ASSIGNED, self::CANCELLED],
         self::ASSIGNED => [self::DRIVER_ARRIVING_PICKUP, self::CANCELLED, self::FAILED],
         self::DRIVER_ARRIVING_PICKUP => [self::PICKED_UP, self::FAILED],
@@ -38,4 +40,3 @@ final class DeliveryStatus
         return in_array($to, self::FLOW[$from] ?? [], true);
     }
 }
-

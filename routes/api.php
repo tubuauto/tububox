@@ -48,7 +48,7 @@ $authService = new AuthService($users);
 $webhookService = new WebhookService($webhooks);
 $deliveryService = new DeliveryService($deliveries, $deliveryLogs, $tracking, $organizations, new DeliveryPolicy(new TenantPolicy()), $webhookService);
 $dispatchService = new DispatchService($deliveryService, $drivers, $assignments);
-$driverService = new DriverFulfillmentService($deliveryService, $deliveries, $deliveryLogs, $drivers, $proofs, $codCollections);
+$driverService = new DriverFulfillmentService($deliveryService, $deliveries, $deliveryLogs, $drivers, $assignments, $proofs, $codCollections, $webhookService);
 
 $deliveryController = new DeliveryController($deliveryService, $deliveryLogs, $tenants);
 $dispatchController = new DispatchController($dispatchService);
@@ -73,12 +73,17 @@ $router->add('GET', '/api/v1/deliveries/{id}/tracking', [$deliveryController, 't
 $router->add('POST', '/api/v1/marketplace/orders', [$deliveryController, 'createMarketplace'], [$sessionAuth, $marketplaceRole]);
 $router->add('GET', '/api/v1/marketplace/orders', [$deliveryController, 'indexMarketplace'], [$sessionAuth, $marketplaceRole]);
 $router->add('GET', '/api/v1/marketplace/orders/{id}', [$deliveryController, 'showMarketplace'], [$sessionAuth, $marketplaceRole]);
+$router->add('POST', '/api/v1/marketplace/orders/{id}/pay', [$deliveryController, 'payMarketplace'], [$sessionAuth, $marketplaceRole]);
 $router->add('POST', '/api/v1/marketplace/orders/{id}/cancel', [$deliveryController, 'cancelMarketplace'], [$sessionAuth, $marketplaceRole]);
 
 $router->add('POST', '/api/v1/dispatch/assign', [$dispatchController, 'assign'], [$sessionAuth, $tenantScope, $dispatchRole]);
 $router->add('POST', '/api/v1/dispatch/reassign', [$dispatchController, 'reassign'], [$sessionAuth, $tenantScope, $dispatchRole]);
 $router->add('POST', '/api/v1/dispatch/mark-failed', [$dispatchController, 'markFailed'], [$sessionAuth, $tenantScope, $dispatchRole]);
 
+$router->add('GET', '/api/v1/driver/grab-pool', [$driverController, 'grabPool'], [$sessionAuth, $tenantScope, $riderRole]);
+$router->add('GET', '/api/v1/rider/grab-pool', [$driverController, 'grabPool'], [$sessionAuth, $tenantScope, $riderRole]);
+$router->add('POST', '/api/v1/driver/deliveries/{id}/claim', [$driverController, 'claim'], [$sessionAuth, $tenantScope, $riderRole]);
+$router->add('POST', '/api/v1/rider/deliveries/{id}/claim', [$driverController, 'claim'], [$sessionAuth, $tenantScope, $riderRole]);
 $router->add('POST', '/api/v1/driver/deliveries/{id}/accept', [$driverController, 'accept'], [$sessionAuth, $tenantScope, $riderRole]);
 $router->add('POST', '/api/v1/driver/deliveries/{id}/arrive-pickup', [$driverController, 'arrivePickup'], [$sessionAuth, $tenantScope, $riderRole]);
 $router->add('POST', '/api/v1/driver/deliveries/{id}/pickup', [$driverController, 'pickup'], [$sessionAuth, $tenantScope, $riderRole]);

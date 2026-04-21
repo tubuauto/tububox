@@ -24,6 +24,8 @@ final class DeliveryRepository extends BaseRepository
                 recipient_name, recipient_phone, dropoff_address, dropoff_lat, dropoff_lng,
                 goods_type, goods_weight, goods_note,
                 delivery_fee_cents,
+                quote_fee_cents, quote_currency, quote_distance_km, quote_status,
+                payment_status, payment_amount_cents, payment_method, payment_reference, paid_at,
                 cod_required, cod_amount_cents, cod_currency, cod_status,
                 status, scheduled_at
             ) VALUES (
@@ -35,6 +37,8 @@ final class DeliveryRepository extends BaseRepository
                 :recipient_name, :recipient_phone, :dropoff_address, :dropoff_lat, :dropoff_lng,
                 :goods_type, :goods_weight, :goods_note,
                 :delivery_fee_cents,
+                :quote_fee_cents, :quote_currency, :quote_distance_km, :quote_status,
+                :payment_status, :payment_amount_cents, :payment_method, :payment_reference, :paid_at,
                 :cod_required, :cod_amount_cents, :cod_currency, :cod_status,
                 :status, :scheduled_at
             ) RETURNING *
@@ -64,6 +68,15 @@ final class DeliveryRepository extends BaseRepository
             'goods_weight' => $payload['goods_weight'] ?? null,
             'goods_note' => $payload['goods_note'] ?? null,
             'delivery_fee_cents' => $payload['delivery_fee_cents'] ?? 0,
+            'quote_fee_cents' => $payload['quote_fee_cents'] ?? 0,
+            'quote_currency' => $payload['quote_currency'] ?? 'CAD',
+            'quote_distance_km' => $payload['quote_distance_km'] ?? null,
+            'quote_status' => $payload['quote_status'] ?? 'none',
+            'payment_status' => $payload['payment_status'] ?? 'unpaid',
+            'payment_amount_cents' => $payload['payment_amount_cents'] ?? 0,
+            'payment_method' => $payload['payment_method'] ?? null,
+            'payment_reference' => $payload['payment_reference'] ?? null,
+            'paid_at' => $payload['paid_at'] ?? null,
             'cod_required' => $this->toPgBoolean($payload['cod_required'] ?? false),
             'cod_amount_cents' => $payload['cod_amount_cents'] ?? 0,
             'cod_currency' => $payload['cod_currency'] ?? 'CAD',
@@ -236,6 +249,88 @@ final class DeliveryRepository extends BaseRepository
             'id' => $deliveryId,
             'cod_status' => $codStatus,
         ]);
+    }
+
+    public function markPaymentPaid(
+        int $deliveryId,
+        int $amountCents,
+        ?string $paymentMethod = null,
+        ?string $paymentReference = null
+    ): void {
+        $stmt = $this->pdo()->prepare(
+            'UPDATE deliveries
+             SET payment_status = :payment_status,
+                 payment_amount_cents = :payment_amount_cents,
+                 payment_method = :payment_method,
+                 payment_reference = :payment_reference,
+                 quote_status = :quote_status,
+                 paid_at = CURRENT_TIMESTAMP,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $deliveryId,
+            'payment_status' => 'paid',
+            'payment_amount_cents' => $amountCents,
+            'payment_method' => $paymentMethod,
+            'payment_reference' => $paymentReference,
+            'quote_status' => 'accepted',
+        ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function listGrabPool(int $tenantId, int $limit = 200): array
+    {
+        $safeLimit = max(1, min(500, $limit));
+        $stmt = $this->pdo()->prepare(
+            sprintf(
+                'SELECT d.*, o.name AS store_name
+                 FROM deliveries d
+                 LEFT JOIN organizations o ON o.id = d.store_id
+                 WHERE d.tenant_id = :tenant_id
+                   AND d.source_type = :source_type
+                   AND d.status = :status
+                   AND d.payment_status = :payment_status
+                   AND d.assigned_driver_id IS NULL
+                 ORDER BY d.created_at ASC
+                 LIMIT %d',
+                $safeLimit
+            )
+        );
+        $stmt->execute([
+            'tenant_id' => $tenantId,
+            'source_type' => 'marketplace',
+            'status' => 'pending',
+            'payment_status' => 'paid',
+        ]);
+        $rows = $stmt->fetchAll();
+
+        return is_array($rows) ? $rows : [];
+    }
+
+    public function claimByDriver(int $deliveryId, int $driverId): bool
+    {
+        $stmt = $this->pdo()->prepare(
+            'UPDATE deliveries
+             SET assigned_driver_id = :driver_id, status = :status, updated_at = CURRENT_TIMESTAMP
+             WHERE id = :id
+               AND source_type = :source_type
+               AND status = :pending_status
+               AND payment_status = :payment_status
+               AND assigned_driver_id IS NULL'
+        );
+        $stmt->execute([
+            'id' => $deliveryId,
+            'driver_id' => $driverId,
+            'status' => 'assigned',
+            'source_type' => 'marketplace',
+            'pending_status' => 'pending',
+            'payment_status' => 'paid',
+        ]);
+
+        return $stmt->rowCount() > 0;
     }
 
     /**

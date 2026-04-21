@@ -23,6 +23,26 @@ final class DriverController extends BaseApiController
         return $this->runAction($request, fn (array $auth, int $id): array => $this->driverService->accept($auth, $id), 'Accepted');
     }
 
+    public function grabPool(Request $request): Response
+    {
+        try {
+            $auth = $request->attribute('auth');
+            if (!is_array($auth)) {
+                return $this->error('Unauthorized', [], 401, 'UNAUTHORIZED', $request);
+            }
+
+            $items = $this->driverService->listGrabPool($auth);
+            return $this->success('OK', ['items' => $items], request: $request);
+        } catch (Throwable $e) {
+            return $this->handleException($e, $request);
+        }
+    }
+
+    public function claim(Request $request): Response
+    {
+        return $this->runAction($request, fn (array $auth, int $id): array => $this->driverService->claim($auth, $id), 'Claimed');
+    }
+
     public function arrivePickup(Request $request): Response
     {
         return $this->runAction($request, fn (array $auth, int $id): array => $this->driverService->arrivePickup($auth, $id), 'Arrived pickup');

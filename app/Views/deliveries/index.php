@@ -14,7 +14,7 @@
     </select>
     <select name="status">
         <option value="">All Status</option>
-        <?php foreach (['pending','assigned','driver_arriving_pickup','picked_up','in_transit','arrived','signed','completed','failed','cancelled'] as $status): ?>
+        <?php foreach (['awaiting_payment','pending','assigned','driver_arriving_pickup','picked_up','in_transit','arrived','signed','completed','failed','cancelled'] as $status): ?>
             <option value="<?= h($status) ?>" <?= (($query['status'] ?? '') === $status) ? 'selected' : '' ?>><?= h($status) ?></option>
         <?php endforeach; ?>
     </select>
@@ -31,6 +31,7 @@
                 <th>Pickup</th>
                 <th>Dropoff</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th>Rider</th>
                 <th>Created</th>
             </tr>
@@ -44,6 +45,7 @@
                 <td><?= h($item['pickup_address']) ?></td>
                 <td><?= h($item['dropoff_address']) ?></td>
                 <td><span class="badge"><?= h($item['status']) ?></span></td>
+                <td><?= h($item['payment_status'] ?? '-') ?></td>
                 <td><?= h($item['assigned_driver_id'] ?: '-') ?></td>
                 <td><?= h($item['created_at']) ?></td>
             </tr>
