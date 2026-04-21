@@ -240,6 +240,19 @@ final class DeliveryRepository extends BaseRepository
         ]);
     }
 
+    public function returnToDispatch(int $deliveryId): void
+    {
+        $stmt = $this->pdo()->prepare(
+            'UPDATE deliveries
+             SET assigned_driver_id = NULL, status = :status, updated_at = CURRENT_TIMESTAMP
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $deliveryId,
+            'status' => 'pending',
+        ]);
+    }
+
     public function updateCodStatus(int $deliveryId, string $codStatus): void
     {
         $stmt = $this->pdo()->prepare(

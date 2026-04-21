@@ -115,6 +115,7 @@ Use request headers:
 - `POST /api/v1/rider/deliveries/{id}/arrive-pickup`
 - `POST /api/v1/rider/deliveries/{id}/pickup`
 - `POST /api/v1/rider/deliveries/{id}/arrive-dropoff`
+- `POST /api/v1/rider/deliveries/{id}/return-dispatch`
 - `POST /api/v1/rider/deliveries/{id}/sign`
 - `POST /api/v1/rider/deliveries/{id}/complete`
 - `POST /api/v1/rider/deliveries/{id}/cod-collect`
@@ -123,6 +124,7 @@ Use request headers:
 - `POST /api/v1/driver/deliveries/{id}/arrive-pickup`
 - `POST /api/v1/driver/deliveries/{id}/pickup`
 - `POST /api/v1/driver/deliveries/{id}/arrive-dropoff`
+- `POST /api/v1/driver/deliveries/{id}/return-dispatch`
 - `POST /api/v1/driver/deliveries/{id}/sign`
 - `POST /api/v1/driver/deliveries/{id}/complete`
 - `POST /api/v1/driver/deliveries/{id}/cod-collect`

@@ -112,6 +112,10 @@ final class DriverPageController extends BaseWebController
                     $this->driverService->arriveDropoff($auth, $deliveryId);
                     $message = 'Arrival at dropoff confirmed.';
                     break;
+                case 'return-dispatch':
+                    $this->driverService->returnToDispatch($auth, $deliveryId, (string) $request->input('reason', ''));
+                    $message = 'Order returned to dispatch center.';
+                    break;
                 case 'sign':
                     $this->driverService->sign($auth, $deliveryId, $request->body());
                     $message = 'Delivery signed.';

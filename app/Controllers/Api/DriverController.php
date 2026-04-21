@@ -62,6 +62,15 @@ final class DriverController extends BaseApiController
         return $this->runAction($request, fn (array $auth, int $id): array => $this->driverService->arriveDropoff($auth, $id), 'Arrived dropoff');
     }
 
+    public function returnDispatch(Request $request): Response
+    {
+        return $this->runAction(
+            $request,
+            fn (array $auth, int $id): array => $this->driverService->returnToDispatch($auth, $id, (string) $request->input('reason', '')),
+            'Returned to dispatch'
+        );
+    }
+
     public function sign(Request $request): Response
     {
         return $this->runAction(

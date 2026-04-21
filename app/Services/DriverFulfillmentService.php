@@ -190,6 +190,43 @@ final class DriverFulfillmentService
 
     /**
      * @param array<string, mixed> $auth
+     * @return array<string, mixed>
+     */
+    public function returnToDispatch(array $auth, int $deliveryId, ?string $reason = null): array
+    {
+        $delivery = $this->deliveryService->getOrFail($auth, $deliveryId);
+        $this->ensureDriverAssignment($auth, $delivery);
+
+        $status = (string) ($delivery['status'] ?? '');
+        if ($status !== DeliveryStatus::ARRIVED) {
+            throw new BadRequestException('Return to dispatch is only allowed at arrived status.');
+        }
+
+        $this->deliveries->returnToDispatch($deliveryId);
+        $updated = $this->deliveries->findById($deliveryId);
+        if ($updated === null) {
+            throw new NotFoundException('Delivery not found after returning to dispatch.');
+        }
+
+        $note = trim((string) $reason);
+        if ($note === '') {
+            $note = 'No receiver signed, returned to dispatch center';
+        }
+
+        $this->deliveryLogs->create(
+            deliveryId: $deliveryId,
+            status: DeliveryStatus::PENDING,
+            note: $note,
+            actorType: (string) ($auth['role'] ?? 'rider'),
+            actorId: isset($auth['id']) ? (int) $auth['id'] : null
+        );
+
+        $this->webhooks->dispatchDeliveryStatus($updated);
+        return $updated;
+    }
+
+    /**
+     * @param array<string, mixed> $auth
      * @param array<string, mixed> $payload
      */
     public function collectCod(array $auth, int $deliveryId, array $payload): array
