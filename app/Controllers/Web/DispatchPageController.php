@@ -33,6 +33,8 @@ final class DispatchPageController extends BaseWebController
         $isAdmin = (bool) ($auth['is_admin'] ?? false);
 
         $pending = $this->deliveries->list(['status' => 'pending'], $tenantId, $isAdmin);
+        $dispatchPending = $this->deliveries->list(['status' => 'dispatch_pending'], $tenantId, $isAdmin);
+        $pendingForAssign = array_merge($dispatchPending, $pending);
         $assigned = $this->deliveries->list(['status' => 'assigned'], $tenantId, $isAdmin);
         $failed = $this->deliveries->list(['status' => 'failed'], $tenantId, $isAdmin);
         $drivers = $tenantId !== null ? $this->drivers->listByTenant($tenantId) : [];
@@ -40,6 +42,8 @@ final class DispatchPageController extends BaseWebController
         return $this->render('dispatch.index', [
             'auth' => $auth,
             'pending' => $pending,
+            'dispatch_pending' => $dispatchPending,
+            'pending_for_assign' => $pendingForAssign,
             'assigned' => $assigned,
             'failed' => $failed,
             'drivers' => $drivers,

@@ -249,7 +249,7 @@ final class DeliveryRepository extends BaseRepository
         );
         $stmt->execute([
             'id' => $deliveryId,
-            'status' => 'pending',
+            'status' => 'dispatch_pending',
         ]);
     }
 

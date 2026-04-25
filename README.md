@@ -138,6 +138,7 @@ API response contract:
 
 - `POST /api/v1/marketplace/orders`: `tenant_id` is optional for `user` role (system auto-resolves default fulfillment tenant)
 - Marketplace user order creates with status `awaiting_payment`; after `pay` it moves to `pending` and enters rider grab pool
+- If rider returns unsigned order via `return-dispatch`, status becomes `dispatch_pending` (dispatch-only queue, excluded from rider grab pool)
 
 - Success: `success`, `message`, `data`, `meta`
 - Error: `success`, `message`, `error_code`, `errors`, `meta`

@@ -194,7 +194,7 @@ final class DeliveryService
     {
         $delivery = $this->getOrFail($auth, $deliveryId);
 
-        if (!in_array($delivery['status'], [DeliveryStatus::PENDING, DeliveryStatus::ASSIGNED], true)) {
+        if (!in_array($delivery['status'], [DeliveryStatus::PENDING, DeliveryStatus::DISPATCH_PENDING, DeliveryStatus::ASSIGNED], true)) {
             throw new BadRequestException('Delivery cannot be assigned in current status.');
         }
 
@@ -336,10 +336,10 @@ final class DeliveryService
     {
         $delivery = $this->getMarketplaceForUserOrFail($auth, $deliveryId);
         $status = (string) ($delivery['status'] ?? '');
-        if (!in_array($status, [DeliveryStatus::AWAITING_PAYMENT, DeliveryStatus::PENDING, DeliveryStatus::ASSIGNED], true)) {
+        if (!in_array($status, [DeliveryStatus::AWAITING_PAYMENT, DeliveryStatus::PENDING, DeliveryStatus::DISPATCH_PENDING, DeliveryStatus::ASSIGNED], true)) {
             throw new BadRequestException(
-                'Marketplace order can only be cancelled in awaiting_payment, pending or assigned status.',
-                ['status' => 'Only awaiting_payment/pending/assigned orders can be cancelled.']
+                'Marketplace order can only be cancelled in awaiting_payment, pending, dispatch_pending or assigned status.',
+                ['status' => 'Only awaiting_payment/pending/dispatch_pending/assigned orders can be cancelled.']
             );
         }
 
@@ -507,6 +507,7 @@ final class DeliveryService
             'in_progress' => [
                 DeliveryStatus::AWAITING_PAYMENT,
                 DeliveryStatus::PENDING,
+                DeliveryStatus::DISPATCH_PENDING,
                 DeliveryStatus::ASSIGNED,
                 DeliveryStatus::DRIVER_ARRIVING_PICKUP,
                 DeliveryStatus::PICKED_UP,

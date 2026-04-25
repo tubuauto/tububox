@@ -23,6 +23,7 @@ final class DashboardRepository extends BaseRepository
             SELECT
                 COUNT(*) AS total,
                 COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+                COUNT(*) FILTER (WHERE status = 'dispatch_pending') AS dispatch_pending,
                 COUNT(*) FILTER (WHERE status = 'assigned') AS assigned,
                 COUNT(*) FILTER (WHERE status = 'in_transit') AS in_transit,
                 COUNT(*) FILTER (WHERE status = 'completed') AS completed,
@@ -39,6 +40,7 @@ final class DashboardRepository extends BaseRepository
         return [
             'total' => (int) ($result['total'] ?? 0),
             'pending' => (int) ($result['pending'] ?? 0),
+            'dispatch_pending' => (int) ($result['dispatch_pending'] ?? 0),
             'assigned' => (int) ($result['assigned'] ?? 0),
             'in_transit' => (int) ($result['in_transit'] ?? 0),
             'completed' => (int) ($result['completed'] ?? 0),
@@ -46,4 +48,3 @@ final class DashboardRepository extends BaseRepository
         ];
     }
 }
-

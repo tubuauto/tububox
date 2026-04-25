@@ -215,7 +215,7 @@ final class DriverFulfillmentService
 
         $this->deliveryLogs->create(
             deliveryId: $deliveryId,
-            status: DeliveryStatus::PENDING,
+            status: DeliveryStatus::DISPATCH_PENDING,
             note: $note,
             actorType: (string) ($auth['role'] ?? 'rider'),
             actorId: isset($auth['id']) ? (int) $auth['id'] : null

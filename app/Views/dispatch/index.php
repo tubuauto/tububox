@@ -6,8 +6,8 @@
     <form method="post" action="/dispatch/assign" class="filter-row">
         <select name="delivery_id" required>
             <option value="">Select pending delivery</option>
-            <?php foreach ($pending as $item): ?>
-                <option value="<?= h($item['id']) ?>">#<?= h($item['id']) ?> - <?= h($item['pickup_address']) ?> → <?= h($item['dropoff_address']) ?></option>
+            <?php foreach (($pending_for_assign ?? $pending) as $item): ?>
+                <option value="<?= h($item['id']) ?>">#<?= h($item['id']) ?> [<?= h($item['status']) ?>] - <?= h($item['pickup_address']) ?> -> <?= h($item['dropoff_address']) ?></option>
             <?php endforeach; ?>
         </select>
         <select name="driver_id" required>
@@ -46,13 +46,30 @@
     <form method="post" action="/dispatch/mark-failed" class="filter-row">
         <select name="delivery_id" required>
             <option value="">Select delivery</option>
-            <?php foreach (array_merge($pending, $assigned) as $item): ?>
+            <?php foreach (array_merge(($pending_for_assign ?? $pending), $assigned) as $item): ?>
                 <option value="<?= h($item['id']) ?>">#<?= h($item['id']) ?> - <?= h($item['status']) ?></option>
             <?php endforeach; ?>
         </select>
         <input type="text" name="reason" placeholder="failure reason" required>
         <button class="btn btn-danger" type="submit">Mark Failed</button>
     </form>
+</div>
+
+<div class="card table-wrap">
+    <h3>Dispatch Pending (Returned Unsigned)</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Status</th><th>Pickup</th><th>Dropoff</th></tr></thead>
+        <tbody>
+        <?php foreach (($dispatch_pending ?? []) as $item): ?>
+            <tr>
+                <td>#<?= h($item['id']) ?></td>
+                <td><span class="badge"><?= h($item['status']) ?></span></td>
+                <td><?= h($item['pickup_address']) ?></td>
+                <td><?= h($item['dropoff_address']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
 </div>
 
 <div class="card table-wrap">

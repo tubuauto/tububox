@@ -8,6 +8,7 @@ final class DeliveryStatus
 {
     public const AWAITING_PAYMENT = 'awaiting_payment';
     public const PENDING = 'pending';
+    public const DISPATCH_PENDING = 'dispatch_pending';
     public const ASSIGNED = 'assigned';
     public const DRIVER_ARRIVING_PICKUP = 'driver_arriving_pickup';
     public const PICKED_UP = 'picked_up';
@@ -24,6 +25,7 @@ final class DeliveryStatus
     private const FLOW = [
         self::AWAITING_PAYMENT => [self::PENDING, self::CANCELLED],
         self::PENDING => [self::ASSIGNED, self::CANCELLED],
+        self::DISPATCH_PENDING => [self::ASSIGNED, self::FAILED, self::CANCELLED],
         self::ASSIGNED => [self::DRIVER_ARRIVING_PICKUP, self::CANCELLED, self::FAILED],
         self::DRIVER_ARRIVING_PICKUP => [self::PICKED_UP, self::FAILED],
         self::PICKED_UP => [self::IN_TRANSIT, self::FAILED],

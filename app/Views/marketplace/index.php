@@ -20,7 +20,7 @@
     <input type="text" name="source_order_no" placeholder="source_order_no" value="<?= h($query['source_order_no'] ?? '') ?>">
     <select name="status">
         <option value="">All Status</option>
-        <?php foreach (['awaiting_payment','pending','assigned','driver_arriving_pickup','picked_up','in_transit','arrived','signed','completed','failed','cancelled'] as $status): ?>
+        <?php foreach (['awaiting_payment','pending','dispatch_pending','assigned','driver_arriving_pickup','picked_up','in_transit','arrived','signed','completed','failed','cancelled'] as $status): ?>
             <option value="<?= h($status) ?>" <?= (($query['status'] ?? '') === $status) ? 'selected' : '' ?>><?= h($status) ?></option>
         <?php endforeach; ?>
     </select>

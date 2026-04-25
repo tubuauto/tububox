@@ -20,7 +20,7 @@
     </form>
 <?php endif; ?>
 
-<?php if (in_array((string) ($delivery['status'] ?? ''), ['awaiting_payment', 'pending', 'assigned'], true)): ?>
+<?php if (in_array((string) ($delivery['status'] ?? ''), ['awaiting_payment', 'pending', 'dispatch_pending', 'assigned'], true)): ?>
     <form method="post" action="/marketplace/orders/<?= h($delivery['id']) ?>/cancel" class="card form-grid">
         <h3>Cancel Order</h3>
         <input type="text" name="reason" placeholder="cancel reason (optional)">

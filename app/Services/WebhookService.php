@@ -215,6 +215,7 @@ final class WebhookService
             'delivery.completed',
             'delivery.failed',
             'delivery.cancelled',
+            'delivery.dispatch_pending',
             'delivery.cod_collected',
         ];
 
