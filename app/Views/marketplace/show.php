@@ -41,6 +41,21 @@
     </div>
 </div>
 
+<?php if (!empty($delivery['pickup_verify_code']) || !empty($delivery['dropoff_verify_code'])): ?>
+    <div class="card-grid two">
+        <div class="card">
+            <h3>Pickup Code</h3>
+            <p><strong><?= h($delivery['pickup_verify_code'] ?: '-') ?></strong></p>
+            <p class="muted">Give this code to rider at pickup.</p>
+        </div>
+        <div class="card">
+            <h3>Dropoff Code</h3>
+            <p><strong><?= h($delivery['dropoff_verify_code'] ?: '-') ?></strong></p>
+            <p class="muted">Rider must enter this code before sign.</p>
+        </div>
+    </div>
+<?php endif; ?>
+
 <div class="card">
     <h3>Meta</h3>
     <p>source_order_no: <?= h($delivery['source_order_no'] ?: '-') ?></p>

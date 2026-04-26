@@ -29,6 +29,8 @@
     <p>quote_status: <?= h($delivery['quote_status'] ?? '-') ?></p>
     <p>payment_status: <?= h($delivery['payment_status'] ?? '-') ?></p>
     <p>payment_amount_cents: <?= h($delivery['payment_amount_cents'] ?? '-') ?></p>
+    <p>pickup_verify_code: <?= h($delivery['pickup_verify_code'] ?? '-') ?></p>
+    <p>dropoff_verify_code: <?= h($delivery['dropoff_verify_code'] ?? '-') ?></p>
     <p>cod_status: <?= h($delivery['cod_status']) ?></p>
 </div>
 

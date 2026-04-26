@@ -69,6 +69,8 @@ final class DeliveryService
         $paymentStatus = 'unpaid';
         $paymentAmountCents = 0;
         $status = DeliveryStatus::PENDING;
+        $pickupVerifyCode = null;
+        $dropoffVerifyCode = null;
 
         if ($sourceType === 'marketplace' && $role === 'user') {
             $quote = $this->buildMarketplaceQuote($pickup, $dropoff, $goods, $cod);
@@ -78,6 +80,7 @@ final class DeliveryService
             $quoteDistanceKm = $quote['distance_km'];
             $quoteStatus = 'quoted';
             $status = DeliveryStatus::AWAITING_PAYMENT;
+            [$pickupVerifyCode, $dropoffVerifyCode] = $this->generateVerifyCodes();
         } elseif ($sourceType === 'marketplace') {
             $quote = $this->buildMarketplaceQuote($pickup, $dropoff, $goods, $cod);
             if ($deliveryFeeCents <= 0) {
@@ -89,6 +92,7 @@ final class DeliveryService
             $quoteStatus = 'accepted';
             $paymentStatus = 'paid';
             $paymentAmountCents = $deliveryFeeCents;
+            [$pickupVerifyCode, $dropoffVerifyCode] = $this->generateVerifyCodes();
         } else {
             $quoteFeeCents = max(0, $deliveryFeeCents);
             $quoteStatus = 'accepted';
@@ -129,6 +133,10 @@ final class DeliveryService
             'payment_method' => null,
             'payment_reference' => null,
             'paid_at' => $paymentStatus === 'paid' ? gmdate('Y-m-d H:i:s') : null,
+            'pickup_verify_code' => $pickupVerifyCode,
+            'dropoff_verify_code' => $dropoffVerifyCode,
+            'pickup_verified_at' => null,
+            'dropoff_verified_at' => null,
             'cod_required' => (bool) ($cod['required'] ?? false),
             'cod_amount_cents' => (int) ($cod['amount_cents'] ?? 0),
             'cod_currency' => $cod['currency'] ?? 'CAD',
@@ -583,5 +591,18 @@ final class DeliveryService
         $c = 2 * atan2(sqrt($a), sqrt(max(0.0, 1 - $a)));
 
         return 6371 * $c;
+    }
+
+    /**
+     * @return array{0:string,1:string}
+     */
+    private function generateVerifyCodes(): array
+    {
+        $pickup = (string) random_int(1000, 9999);
+        do {
+            $dropoff = (string) random_int(1000, 9999);
+        } while ($dropoff === $pickup);
+
+        return [$pickup, $dropoff];
     }
 }

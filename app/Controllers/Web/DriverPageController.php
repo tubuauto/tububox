@@ -105,7 +105,12 @@ final class DriverPageController extends BaseWebController
                     $message = 'Arrival at pickup confirmed.';
                     break;
                 case 'pickup':
-                    $this->driverService->pickup($auth, $deliveryId, (string) $request->input('note', ''));
+                    $this->driverService->pickup(
+                        $auth,
+                        $deliveryId,
+                        (string) $request->input('note', ''),
+                        (string) $request->input('pickup_code', '')
+                    );
                     $message = 'Pickup confirmed.';
                     break;
                 case 'arrive-dropoff':

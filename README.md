@@ -28,6 +28,7 @@ Current Phase 1 implementation includes:
   - Supports both `Store Pickup` and `Custom Pickup` user order modes
   - `Custom Pickup` is user-self-service and auto-routed to fulfillment network tenant (no merchant selection needed)
   - Marketplace order flow: create -> quote -> pay -> rider grab pool -> rider claim -> fulfill
+  - Marketplace orders generate `pickup_verify_code` and `dropoff_verify_code` for rider OTP verification
 
 Phase 2 hardening completed:
 
@@ -139,6 +140,7 @@ API response contract:
 - `POST /api/v1/marketplace/orders`: `tenant_id` is optional for `user` role (system auto-resolves default fulfillment tenant)
 - Marketplace user order creates with status `awaiting_payment`; after `pay` it moves to `pending` and enters rider grab pool
 - If rider returns unsigned order via `return-dispatch`, status becomes `dispatch_pending` (dispatch-only queue, excluded from rider grab pool)
+- Rider `pickup` for marketplace orders should provide `pickup_code`; rider `sign` should provide `dropoff_verify_code`
 
 - Success: `success`, `message`, `data`, `meta`
 - Error: `success`, `message`, `error_code`, `errors`, `meta`

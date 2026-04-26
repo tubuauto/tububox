@@ -137,10 +137,25 @@ final class DriverFulfillmentService
     /**
      * @param array<string, mixed> $auth
      */
-    public function pickup(array $auth, int $deliveryId, ?string $note = null): array
+    public function pickup(array $auth, int $deliveryId, ?string $note = null, ?string $pickupCode = null): array
     {
         $delivery = $this->deliveryService->getOrFail($auth, $deliveryId);
         $this->ensureDriverAssignment($auth, $delivery);
+
+        if ((string) ($delivery['source_type'] ?? '') === 'marketplace') {
+            $expected = trim((string) ($delivery['pickup_verify_code'] ?? ''));
+            $provided = trim((string) ($pickupCode ?? ''));
+            if ($expected !== '' && $provided !== $expected) {
+                throw new ValidationException([
+                    'pickup_code' => 'pickup_code is invalid.',
+                ], 'Invalid pickup verification code.');
+            }
+
+            if ($expected !== '') {
+                $this->deliveries->markPickupVerified($deliveryId);
+            }
+        }
+
         return $this->deliveryService->transition($auth, $deliveryId, 'picked_up', $note ?? 'Pickup confirmed');
     }
 
@@ -167,6 +182,20 @@ final class DriverFulfillmentService
     {
         $delivery = $this->deliveryService->getOrFail($auth, $deliveryId);
         $this->ensureDriverAssignment($auth, $delivery);
+
+        if ((string) ($delivery['source_type'] ?? '') === 'marketplace') {
+            $expected = trim((string) ($delivery['dropoff_verify_code'] ?? ''));
+            $provided = trim((string) ($payload['dropoff_verify_code'] ?? ''));
+            if ($expected !== '' && $provided !== $expected) {
+                throw new ValidationException([
+                    'dropoff_verify_code' => 'dropoff_verify_code is invalid.',
+                ], 'Invalid dropoff verification code.');
+            }
+
+            if ($expected !== '') {
+                $this->deliveries->markDropoffVerified($deliveryId);
+            }
+        }
 
         $this->proofs->create(
             deliveryId: $deliveryId,

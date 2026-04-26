@@ -52,7 +52,12 @@ final class DriverController extends BaseApiController
     {
         return $this->runAction(
             $request,
-            fn (array $auth, int $id): array => $this->driverService->pickup($auth, $id, (string) $request->input('note', '')),
+            fn (array $auth, int $id): array => $this->driverService->pickup(
+                $auth,
+                $id,
+                (string) $request->input('note', ''),
+                (string) $request->input('pickup_code', '')
+            ),
             'Pickup confirmed'
         );
     }

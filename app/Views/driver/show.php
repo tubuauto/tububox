@@ -25,6 +25,7 @@
     <form method="post" action="/rider/deliveries/<?= h($delivery['id']) ?>/accept" class="card"><button class="btn btn-light" type="submit">Accept</button></form>
     <form method="post" action="/rider/deliveries/<?= h($delivery['id']) ?>/arrive-pickup" class="card"><button class="btn btn-light" type="submit">Arrive Pickup</button></form>
     <form method="post" action="/rider/deliveries/<?= h($delivery['id']) ?>/pickup" class="card">
+        <input type="text" name="pickup_code" placeholder="pickup verify code (marketplace)">
         <input type="text" name="note" placeholder="pickup note">
         <button class="btn btn-light" type="submit">Confirm Pickup</button>
     </form>
@@ -34,6 +35,7 @@
         <button class="btn btn-danger" type="submit">Return To Dispatch</button>
     </form>
     <form method="post" action="/rider/deliveries/<?= h($delivery['id']) ?>/sign" class="card">
+        <input type="text" name="dropoff_verify_code" placeholder="dropoff verify code (marketplace)">
         <input type="text" name="receiver_name" placeholder="receiver name">
         <input type="text" name="proof_image" placeholder="proof image path">
         <button class="btn btn-light" type="submit">Sign</button>

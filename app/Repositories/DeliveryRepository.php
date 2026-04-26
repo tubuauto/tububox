@@ -26,6 +26,7 @@ final class DeliveryRepository extends BaseRepository
                 delivery_fee_cents,
                 quote_fee_cents, quote_currency, quote_distance_km, quote_status,
                 payment_status, payment_amount_cents, payment_method, payment_reference, paid_at,
+                pickup_verify_code, dropoff_verify_code, pickup_verified_at, dropoff_verified_at,
                 cod_required, cod_amount_cents, cod_currency, cod_status,
                 status, scheduled_at
             ) VALUES (
@@ -39,6 +40,7 @@ final class DeliveryRepository extends BaseRepository
                 :delivery_fee_cents,
                 :quote_fee_cents, :quote_currency, :quote_distance_km, :quote_status,
                 :payment_status, :payment_amount_cents, :payment_method, :payment_reference, :paid_at,
+                :pickup_verify_code, :dropoff_verify_code, :pickup_verified_at, :dropoff_verified_at,
                 :cod_required, :cod_amount_cents, :cod_currency, :cod_status,
                 :status, :scheduled_at
             ) RETURNING *
@@ -77,6 +79,10 @@ final class DeliveryRepository extends BaseRepository
             'payment_method' => $payload['payment_method'] ?? null,
             'payment_reference' => $payload['payment_reference'] ?? null,
             'paid_at' => $payload['paid_at'] ?? null,
+            'pickup_verify_code' => $payload['pickup_verify_code'] ?? null,
+            'dropoff_verify_code' => $payload['dropoff_verify_code'] ?? null,
+            'pickup_verified_at' => $payload['pickup_verified_at'] ?? null,
+            'dropoff_verified_at' => $payload['dropoff_verified_at'] ?? null,
             'cod_required' => $this->toPgBoolean($payload['cod_required'] ?? false),
             'cod_amount_cents' => $payload['cod_amount_cents'] ?? 0,
             'cod_currency' => $payload['cod_currency'] ?? 'CAD',
@@ -262,6 +268,26 @@ final class DeliveryRepository extends BaseRepository
             'id' => $deliveryId,
             'cod_status' => $codStatus,
         ]);
+    }
+
+    public function markPickupVerified(int $deliveryId): void
+    {
+        $stmt = $this->pdo()->prepare(
+            'UPDATE deliveries
+             SET pickup_verified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+             WHERE id = :id'
+        );
+        $stmt->execute(['id' => $deliveryId]);
+    }
+
+    public function markDropoffVerified(int $deliveryId): void
+    {
+        $stmt = $this->pdo()->prepare(
+            'UPDATE deliveries
+             SET dropoff_verified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+             WHERE id = :id'
+        );
+        $stmt->execute(['id' => $deliveryId]);
     }
 
     public function markPaymentPaid(
